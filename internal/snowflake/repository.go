@@ -104,6 +104,56 @@ func (r *Repository) FetchDDL(ctx context.Context, request reverseengineer.DDLRe
 	return ddl.String, nil
 }
 
+// ListStorageIntegrations executes SHOW INTEGRATIONS and returns the names of
+// all integrations whose type is STORAGE.
+func (r *Repository) ListStorageIntegrations(ctx context.Context) ([]string, error) {
+	rows, err := r.db.QueryContext(ctx, "SHOW INTEGRATIONS")
+	if err != nil {
+		return nil, fmt.Errorf("show integrations: %w", err)
+	}
+	defer rows.Close()
+
+	allRows, err := scanRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("scan show integrations: %w", err)
+	}
+
+	var names []string
+	for _, row := range allRows {
+		rawType, ok := row["TYPE"]
+		if !ok {
+			continue
+		}
+		if !strings.EqualFold(strings.TrimSpace(fmt.Sprint(rawType)), "STORAGE") {
+			continue
+		}
+		rawName, ok := row["NAME"]
+		if !ok {
+			continue
+		}
+		name := strings.TrimSpace(fmt.Sprint(rawName))
+		if name != "" {
+			names = append(names, name)
+		}
+	}
+
+	return names, nil
+}
+
+// DescStorageIntegration executes DESC STORAGE INTEGRATION <name> and returns
+// the result rows. Each row contains PROPERTY, PROPERTY_VALUE, PROPERTY_TYPE,
+// PROPERTY_DEFAULT, and PARENT_INTEGRATION columns (uppercased by scanRows).
+func (r *Repository) DescStorageIntegration(ctx context.Context, name string) ([]reverseengineer.Row, error) {
+	query := fmt.Sprintf("DESC STORAGE INTEGRATION %s", quoteQualifiedName(name))
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("desc storage integration %s: %w", name, err)
+	}
+	defer rows.Close()
+
+	return scanRows(rows)
+}
+
 func qualifiedView(database string, viewName string) string {
 	return quoteQualifiedName(database, "INFORMATION_SCHEMA", viewName)
 }

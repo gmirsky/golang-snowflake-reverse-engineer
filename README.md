@@ -55,6 +55,7 @@ go run ./cmd/snowflake-reverse-engineer \
 - `PACKAGES` output can be compacted with `--compact-packages` to reduce very large files
 - Use `--compact-packages-max-runtimes` with `--compact-packages` to keep each package line shorter when many runtimes exist
 - `(truncated, N more)` suffixes are omitted by default to minimize bytes when runtime capping is enabled
+- `storage_integrations.sql` is always written. It contains a `CREATE STORAGE INTEGRATION IF NOT EXISTS` statement for every storage-type integration found via `SHOW INTEGRATIONS` + `DESC STORAGE INTEGRATION`. If no storage integrations exist the file contains a `/* No data found */` comment. Read-only Snowflake-managed properties (`STORAGE_AWS_IAM_USER_ARN`, `STORAGE_AWS_EXTERNAL_ID`, `AZURE_CONSENT_URL`, `AZURE_MULTI_TENANT_APP_NAME`, `STORAGE_GCP_SERVICE_ACCOUNT`) are excluded from the generated DDL.
 - The log file records:
   - all input parameters with the passphrase redacted
   - the row count for each processed view

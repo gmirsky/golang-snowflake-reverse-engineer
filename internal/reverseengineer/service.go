@@ -46,50 +46,65 @@ func (s *Service) Run(ctx context.Context) (RunSummary, error) {
 	}
 	sort.Strings(views)
 
-	jobs := make(chan string)
-	results := make(chan viewResult)
-	workerCount := min(s.cfg.MaxConnections, len(views))
-	if workerCount == 0 {
-		return RunSummary{}, nil
-	}
-
-	var wg sync.WaitGroup
-	for range workerCount {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for viewName := range jobs {
-				results <- s.processView(ctx, viewName)
-			}
-		}()
-	}
-
-	go func() {
-		for _, viewName := range views {
-			jobs <- viewName
-		}
-		close(jobs)
-		wg.Wait()
-		close(results)
-	}()
-
 	summary := RunSummary{}
 	var failures []string
-	for result := range results {
-		summary.ViewsProcessed++
-		summary.RowsProcessed += result.RowsProcessed
-		summary.StatementsGenerated += result.StatementsGenerated
-		if result.FilePath != "" {
-			summary.FilesWritten++
+
+	// Process INFORMATION_SCHEMA views concurrently.
+	if workerCount := min(s.cfg.MaxConnections, len(views)); workerCount > 0 {
+		jobs := make(chan string)
+		results := make(chan viewResult)
+
+		var wg sync.WaitGroup
+		for range workerCount {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for viewName := range jobs {
+					results <- s.processView(ctx, viewName)
+				}
+			}()
 		}
 
-		if result.Err != nil {
-			failures = append(failures, fmt.Sprintf("%s: %v", result.ViewName, result.Err))
-			s.logger.Printf("view=%s error=%v", result.ViewName, result.Err)
-			continue
-		}
+		go func() {
+			for _, viewName := range views {
+				jobs <- viewName
+			}
+			close(jobs)
+			wg.Wait()
+			close(results)
+		}()
 
-		s.logger.Printf("view=%s rows=%d sql_statements=%d file=%s", result.ViewName, result.RowsProcessed, result.StatementsGenerated, result.FilePath)
+		for result := range results {
+			summary.ViewsProcessed++
+			summary.RowsProcessed += result.RowsProcessed
+			summary.StatementsGenerated += result.StatementsGenerated
+			if result.FilePath != "" {
+				summary.FilesWritten++
+			}
+
+			if result.Err != nil {
+				failures = append(failures, fmt.Sprintf("%s: %v", result.ViewName, result.Err))
+				s.logger.Printf("view=%s error=%v", result.ViewName, result.Err)
+				continue
+			}
+
+			s.logger.Printf("view=%s rows=%d sql_statements=%d file=%s", result.ViewName, result.RowsProcessed, result.StatementsGenerated, result.FilePath)
+		}
+	}
+
+	// Process storage integrations (SHOW INTEGRATIONS + DESC STORAGE INTEGRATION).
+	storageResult := s.processStorageIntegrations(ctx)
+	summary.ViewsProcessed++
+	summary.RowsProcessed += storageResult.RowsProcessed
+	summary.StatementsGenerated += storageResult.StatementsGenerated
+	if storageResult.FilePath != "" {
+		summary.FilesWritten++
+	}
+	if storageResult.Err != nil {
+		failures = append(failures, fmt.Sprintf("%s: %v", storageResult.ViewName, storageResult.Err))
+		s.logger.Printf("view=%s error=%v", storageResult.ViewName, storageResult.Err)
+	} else {
+		s.logger.Printf("view=%s rows=%d sql_statements=%d file=%s", storageResult.ViewName, storageResult.RowsProcessed, storageResult.StatementsGenerated, storageResult.FilePath)
 	}
 
 	if len(failures) > 0 {
@@ -156,6 +171,60 @@ func (s *Service) processView(ctx context.Context, viewName string) viewResult {
 	return viewResult{
 		ViewName:            viewName,
 		RowsProcessed:       len(rows),
+		StatementsGenerated: generatedStatements,
+		FilePath:            filePath,
+	}
+}
+
+const storageIntegrationsViewName = "STORAGE_INTEGRATIONS"
+
+func (s *Service) processStorageIntegrations(ctx context.Context) viewResult {
+	names, err := s.repo.ListStorageIntegrations(ctx)
+	if err != nil {
+		return viewResult{ViewName: storageIntegrationsViewName, Err: err}
+	}
+
+	outputBlocks := make([]string, 0, len(names))
+	generatedStatements := 0
+
+	if len(names) == 0 {
+		outputBlocks = append(outputBlocks, RenderNoDataComment(storageIntegrationsViewName))
+	} else {
+		for _, name := range names {
+			descRows, descErr := s.repo.DescStorageIntegration(ctx, name)
+			if descErr != nil {
+				outputBlocks = append(outputBlocks, fmt.Sprintf("/* Unable to describe storage integration %q: %v */", name, descErr))
+				continue
+			}
+
+			ddl, ok := BuildStorageIntegrationDDL(name, descRows)
+			if !ok {
+				outputBlocks = append(outputBlocks, fmt.Sprintf("/* Unable to reconstruct DDL for storage integration %q: missing required properties */", name))
+				continue
+			}
+
+			outputBlocks = append(outputBlocks, EnsureTerminatedSQL(ddl))
+			generatedStatements++
+		}
+	}
+
+	filePath := filepath.Join(s.cfg.OutputDir, sanitizeFileName(s.cfg.OutputFileName(storageIntegrationsViewName)))
+	content := strings.Join(outputBlocks, "\n\n")
+	if !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+
+	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
+		return viewResult{ViewName: storageIntegrationsViewName, Err: fmt.Errorf("write storage integrations output: %w", err)}
+	}
+
+	if s.cfg.Verbose {
+		s.logger.Printf("view=%s wrote_file=%s", storageIntegrationsViewName, filePath)
+	}
+
+	return viewResult{
+		ViewName:            storageIntegrationsViewName,
+		RowsProcessed:       len(names),
 		StatementsGenerated: generatedStatements,
 		FilePath:            filePath,
 	}

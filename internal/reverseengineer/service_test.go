@@ -85,3 +85,150 @@ func TestServiceRunWritesFiles(t *testing.T) {
 		t.Fatalf("expected no data comment, got %s", string(emptyContent))
 	}
 }
+
+func TestServiceRunCompactsPackages(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{
+		Database:        "DEMO_DB",
+		OutputDir:       outputDir,
+		LogDir:          outputDir,
+		MaxConnections:  2,
+		CompactPackages: true,
+	}
+
+	repo := fakeRepo{
+		views: []string{"PACKAGES"},
+		rows: map[string][]Row{
+			"PACKAGES": {
+				{
+					"PACKAGE_NAME":    "abi3audit",
+					"VERSION":         "0.0.24",
+					"LANGUAGE":        "python",
+					"RUNTIME_VERSION": "3.10",
+				},
+				{
+					"PACKAGE_NAME":    "abi3audit",
+					"VERSION":         "0.0.24",
+					"LANGUAGE":        "python",
+					"RUNTIME_VERSION": "3.11",
+				},
+				{
+					"PACKAGE_NAME": "abi3audit",
+					"VERSION":      "0.0.24",
+					"LANGUAGE":     "python",
+				},
+			},
+		},
+		ddls: map[string]string{},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	summary, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if summary.StatementsGenerated != 1 {
+		t.Fatalf("expected 1 compact package statement, got %d", summary.StatementsGenerated)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "packages.sql"))
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+
+	output := string(content)
+	if !strings.Contains(output, "runtimes [\"3.10\", \"3.11\", \"default\"]") {
+		t.Fatalf("expected grouped runtimes in output, got %s", output)
+	}
+}
+
+func TestServiceRunCompactsPackagesWithRuntimeCap(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{
+		Database:                   "DEMO_DB",
+		OutputDir:                  outputDir,
+		LogDir:                     outputDir,
+		MaxConnections:             2,
+		CompactPackages:            true,
+		CompactPackagesMaxRuntimes: 2,
+	}
+
+	repo := fakeRepo{
+		views: []string{"PACKAGES"},
+		rows: map[string][]Row{
+			"PACKAGES": {
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.10"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.11"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.12"},
+			},
+		},
+		ddls: map[string]string{},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	_, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "packages.sql"))
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+
+	output := string(content)
+	if !strings.Contains(output, "runtimes [\"3.10\", \"3.11\"] (truncated, 1 more)") {
+		t.Fatalf("expected capped runtime list in output, got %s", output)
+	}
+}
+
+func TestServiceRunCompactsPackagesWithRuntimeCapOmitTruncationCount(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{
+		Database:                           "DEMO_DB",
+		OutputDir:                          outputDir,
+		LogDir:                             outputDir,
+		MaxConnections:                     2,
+		CompactPackages:                    true,
+		CompactPackagesMaxRuntimes:         2,
+		CompactPackagesOmitTruncationCount: true,
+	}
+
+	repo := fakeRepo{
+		views: []string{"PACKAGES"},
+		rows: map[string][]Row{
+			"PACKAGES": {
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.10"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.11"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.12"},
+			},
+		},
+		ddls: map[string]string{},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	_, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "packages.sql"))
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+
+	output := string(content)
+	if !strings.Contains(output, "runtimes [\"3.10\", \"3.11\"]") {
+		t.Fatalf("expected capped runtime list in output, got %s", output)
+	}
+	if strings.Contains(output, "truncated,") {
+		t.Fatalf("expected no truncation suffix, got %s", output)
+	}
+}

@@ -42,6 +42,9 @@ go run ./cmd/snowflake-reverse-engineer \
 - `--private-key`: Directory path and file name of the private key file
 - `--max-connections`: Optional. Default `3`, minimum `1`, maximum `9`
 - `--passphrase`: Optional. Private key passphrase. Defaults to empty
+- `--compact-packages`: Optional. Groups `INFORMATION_SCHEMA.PACKAGES` rows by package name, version, and language, and emits one line with a runtime list per group
+- `--compact-packages-max-runtimes`: Optional. Caps runtimes shown per compact package group. Default `0` (unlimited)
+- `--compact-packages-omit-truncation-count`: Optional and enabled by default. Omits the `(truncated, N more)` suffix when runtime capping is active
 - `--timestamped-output`: Optional. Appends the run timestamp to output and log file names
 - `--verbose`: Optional. Enables extra runtime logging
 
@@ -49,6 +52,9 @@ go run ./cmd/snowflake-reverse-engineer \
 
 - One file is generated for each view in `<database>.INFORMATION_SCHEMA`
 - Processing is concurrent, limited by `--max-connections`
+- `PACKAGES` output can be compacted with `--compact-packages` to reduce very large files
+- Use `--compact-packages-max-runtimes` with `--compact-packages` to keep each package line shorter when many runtimes exist
+- `(truncated, N more)` suffixes are omitted by default to minimize bytes when runtime capping is enabled
 - The log file records:
   - all input parameters with the passphrase redacted
   - the row count for each processed view

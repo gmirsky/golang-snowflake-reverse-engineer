@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -109,21 +110,32 @@ func (s *Service) processView(ctx context.Context, viewName string) viewResult {
 	if len(rows) == 0 {
 		outputBlocks = append(outputBlocks, RenderNoDataComment(viewName))
 	} else {
-		for _, row := range rows {
-			request, ok := InferDDLRequest(s.cfg.Database, viewName, row)
-			if !ok {
-				outputBlocks = append(outputBlocks, RenderFallbackComment(viewName, row, "unsupported row shape"))
-				continue
-			}
+		if s.cfg.CompactPackages && strings.EqualFold(viewName, "PACKAGES") {
+			outputBlocks = renderCompactPackages(rows, s.cfg.CompactPackagesMaxRuntimes, s.cfg.CompactPackagesOmitTruncationCount)
+			generatedStatements = len(outputBlocks)
+		} else {
+			for _, row := range rows {
+				request, ok := InferDDLRequest(s.cfg.Database, viewName, row)
+				if !ok {
+					outputBlocks = append(outputBlocks, RenderFallbackComment(viewName, row, "unsupported row shape"))
+					continue
+				}
 
-			ddl, ddlErr := s.repo.FetchDDL(ctx, request)
-			if ddlErr != nil {
-				outputBlocks = append(outputBlocks, RenderFallbackComment(viewName, row, ddlErr.Error()))
-				continue
-			}
+				if strings.TrimSpace(request.InlineSQL) != "" {
+					outputBlocks = append(outputBlocks, EnsureTerminatedSQL(request.InlineSQL))
+					generatedStatements++
+					continue
+				}
 
-			outputBlocks = append(outputBlocks, EnsureTerminatedSQL(ddl))
-			generatedStatements++
+				ddl, ddlErr := s.repo.FetchDDL(ctx, request)
+				if ddlErr != nil {
+					outputBlocks = append(outputBlocks, RenderFallbackComment(viewName, row, ddlErr.Error()))
+					continue
+				}
+
+				outputBlocks = append(outputBlocks, EnsureTerminatedSQL(ddl))
+				generatedStatements++
+			}
 		}
 	}
 
@@ -159,4 +171,92 @@ func min(a int, b int) int {
 		return a
 	}
 	return b
+}
+
+type packageGroupKey struct {
+	PackageName string
+	Version     string
+	Language    string
+}
+
+func renderCompactPackages(rows []Row, maxRuntimes int, omitTruncationCount bool) []string {
+	grouped := make(map[packageGroupKey]map[string]struct{})
+	outputBlocks := make([]string, 0, len(rows))
+
+	for _, row := range rows {
+		packageName, okPackage := getString(row, "PACKAGE_NAME")
+		version, okVersion := getString(row, "VERSION")
+		language, okLanguage := getString(row, "LANGUAGE")
+		if !okLanguage {
+			language = "unknown"
+		}
+		if !okPackage || !okVersion {
+			outputBlocks = append(outputBlocks, RenderFallbackComment("PACKAGES", row, "unsupported row shape"))
+			continue
+		}
+
+		runtimeVersion, okRuntime := getString(row, "RUNTIME_VERSION")
+		if !okRuntime {
+			runtimeVersion = "default"
+		}
+
+		key := packageGroupKey{
+			PackageName: packageName,
+			Version:     version,
+			Language:    language,
+		}
+		if _, exists := grouped[key]; !exists {
+			grouped[key] = make(map[string]struct{})
+		}
+		grouped[key][runtimeVersion] = struct{}{}
+	}
+
+	keys := make([]packageGroupKey, 0, len(grouped))
+	for key := range grouped {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i int, j int) bool {
+		if keys[i].PackageName != keys[j].PackageName {
+			return keys[i].PackageName < keys[j].PackageName
+		}
+		if keys[i].Version != keys[j].Version {
+			return keys[i].Version < keys[j].Version
+		}
+		return keys[i].Language < keys[j].Language
+	})
+
+	for _, key := range keys {
+		runtimeSet := grouped[key]
+		runtimes := make([]string, 0, len(runtimeSet))
+		for runtime := range runtimeSet {
+			runtimes = append(runtimes, runtime)
+		}
+		sort.Strings(runtimes)
+
+		truncatedCount := 0
+		if maxRuntimes > 0 && len(runtimes) > maxRuntimes {
+			truncatedCount = len(runtimes) - maxRuntimes
+			runtimes = runtimes[:maxRuntimes]
+		}
+
+		quotedRuntimes := make([]string, 0, len(runtimes))
+		for _, runtime := range runtimes {
+			quotedRuntimes = append(quotedRuntimes, strconv.Quote(runtime))
+		}
+
+		statement := fmt.Sprintf(
+			"-- Package %s version %s language %s runtimes [%s]",
+			quoteIdentifier(key.PackageName),
+			quoteLiteral(key.Version),
+			quoteLiteral(key.Language),
+			strings.Join(quotedRuntimes, ", "),
+		)
+		if truncatedCount > 0 && !omitTruncationCount {
+			statement += fmt.Sprintf(" (truncated, %d more)", truncatedCount)
+		}
+
+		outputBlocks = append(outputBlocks, statement)
+	}
+
+	return outputBlocks
 }

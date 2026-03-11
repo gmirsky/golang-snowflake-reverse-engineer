@@ -16,18 +16,21 @@ const (
 )
 
 type Config struct {
-	User              string
-	Account           string
-	Warehouse         string
-	Database          string
-	OutputDir         string
-	LogDir            string
-	PrivateKeyPath    string
-	MaxConnections    int
-	Passphrase        string
-	TimestampedOutput bool
-	Verbose           bool
-	RunTimestamp      string
+	User                               string
+	Account                            string
+	Warehouse                          string
+	Database                           string
+	OutputDir                          string
+	LogDir                             string
+	PrivateKeyPath                     string
+	MaxConnections                     int
+	Passphrase                         string
+	CompactPackages                    bool
+	CompactPackagesMaxRuntimes         int
+	CompactPackagesOmitTruncationCount bool
+	TimestampedOutput                  bool
+	Verbose                            bool
+	RunTimestamp                       string
 }
 
 func Parse(args []string) (Config, error) {
@@ -44,6 +47,9 @@ func Parse(args []string) (Config, error) {
 	fs.StringVar(&cfg.PrivateKeyPath, "private-key", "", "Private key file path")
 	fs.IntVar(&cfg.MaxConnections, "max-connections", defaultMaxConnections, "Maximum Snowflake connections")
 	fs.StringVar(&cfg.Passphrase, "passphrase", "", "Passphrase for the private key file")
+	fs.BoolVar(&cfg.CompactPackages, "compact-packages", false, "Group INFORMATION_SCHEMA.PACKAGES rows by package/language/version")
+	fs.IntVar(&cfg.CompactPackagesMaxRuntimes, "compact-packages-max-runtimes", 0, "Optional cap for runtimes shown per compact package group (0 means unlimited)")
+	fs.BoolVar(&cfg.CompactPackagesOmitTruncationCount, "compact-packages-omit-truncation-count", true, "Omit '(truncated, N more)' suffix in compact package output")
 	fs.BoolVar(&cfg.TimestampedOutput, "timestamped-output", false, "Append a timestamp to generated file names")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable verbose diagnostic logging")
 
@@ -84,6 +90,10 @@ func (c Config) Validate() error {
 		return fmt.Errorf("max-connections must be between %d and %d", minimumMaxConnections, maximumMaxConnections)
 	}
 
+	if c.CompactPackagesMaxRuntimes < 0 {
+		return errors.New("compact-packages-max-runtimes must be 0 or greater")
+	}
+
 	for _, dir := range []string{c.OutputDir, c.LogDir} {
 		cleanDir := filepath.Clean(dir)
 		if cleanDir == "." || cleanDir == string(filepath.Separator) {
@@ -110,19 +120,22 @@ func (c Config) RedactedParameters() map[string]string {
 	}
 
 	return map[string]string{
-		"user":              c.User,
-		"account":           c.Account,
-		"warehouse":         c.Warehouse,
-		"database":          c.Database,
-		"outputDir":         filepath.Clean(c.OutputDir),
-		"logDir":            filepath.Clean(c.LogDir),
-		"privateKeyPath":    filepath.Clean(c.PrivateKeyPath),
-		"maxConnections":    fmt.Sprintf("%d", c.MaxConnections),
-		"passphrase":        passphrase,
-		"timestampedOutput": fmt.Sprintf("%t", c.TimestampedOutput),
-		"verbose":           fmt.Sprintf("%t", c.Verbose),
-		"runTimestamp":      c.RunTimestamp,
-		"informationSchema": "INFORMATION_SCHEMA",
+		"user":                               c.User,
+		"account":                            c.Account,
+		"warehouse":                          c.Warehouse,
+		"database":                           c.Database,
+		"outputDir":                          filepath.Clean(c.OutputDir),
+		"logDir":                             filepath.Clean(c.LogDir),
+		"privateKeyPath":                     filepath.Clean(c.PrivateKeyPath),
+		"maxConnections":                     fmt.Sprintf("%d", c.MaxConnections),
+		"passphrase":                         passphrase,
+		"compactPackages":                    fmt.Sprintf("%t", c.CompactPackages),
+		"compactPackagesMaxRuntimes":         fmt.Sprintf("%d", c.CompactPackagesMaxRuntimes),
+		"compactPackagesOmitTruncationCount": fmt.Sprintf("%t", c.CompactPackagesOmitTruncationCount),
+		"timestampedOutput":                  fmt.Sprintf("%t", c.TimestampedOutput),
+		"verbose":                            fmt.Sprintf("%t", c.Verbose),
+		"runTimestamp":                       c.RunTimestamp,
+		"informationSchema":                  "INFORMATION_SCHEMA",
 	}
 }
 

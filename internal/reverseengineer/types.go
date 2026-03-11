@@ -7,6 +7,7 @@ type Row map[string]any
 type DDLRequest struct {
 	ObjectType    string
 	QualifiedName string
+	InlineSQL     string
 	ViewName      string
 	Row           Row
 }

@@ -17,7 +17,7 @@ type fakeRepo struct {
 	rows                map[string][]Row
 	ddls                map[string]string
 	storageIntegrations []string
-	storageIntegRows     map[string][]Row
+	storageIntegRows    map[string][]Row
 }
 
 func (f fakeRepo) ListViews(_ context.Context, _ string) ([]string, error) {
@@ -258,9 +258,9 @@ func TestServiceRunProcessesStorageIntegrations(t *testing.T) {
 	}
 
 	repo := fakeRepo{
-		views: []string{},
-		rows:  map[string][]Row{},
-		ddls:  map[string]string{},
+		views:               []string{},
+		rows:                map[string][]Row{},
+		ddls:                map[string]string{},
 		storageIntegrations: []string{"MY_S3_INTEGRATION"},
 		storageIntegRows: map[string][]Row{
 			"MY_S3_INTEGRATION": {

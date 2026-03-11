@@ -1,3 +1,5 @@
+// Package reverseengineer provides DDL inference and rendering helpers used
+// to convert INFORMATION_SCHEMA rows into executable Snowflake SQL statements.
 package reverseengineer
 
 import (
@@ -7,6 +9,9 @@ import (
 	"strings"
 )
 
+// InferDDLRequest examines a single INFORMATION_SCHEMA row and returns the
+// DDLRequest that describes how to fetch or construct its DDL. Returns false
+// when the row cannot be mapped to a known object shape.
 func InferDDLRequest(database string, viewName string, row Row) (DDLRequest, bool) {
 	if request, ok := inferPrivilegeAndRoleView(viewName, row); ok {
 		request.ViewName = viewName
@@ -101,10 +106,14 @@ func InferDDLRequest(database string, viewName string, row Row) (DDLRequest, boo
 	return DDLRequest{}, false
 }
 
+// RenderNoDataComment returns a SQL block comment indicating that the given
+// view contained no rows during this run.
 func RenderNoDataComment(viewName string) string {
 	return fmt.Sprintf("/* No data found in the view %s */\n", viewName)
 }
 
+// RenderFallbackComment returns a SQL block comment embedding the JSON-encoded
+// row metadata when DDL inference fails, so information is never silently lost.
 func RenderFallbackComment(viewName string, row Row, reason string) string {
 	encoded, err := json.MarshalIndent(sortedRow(row), "", "  ")
 	if err != nil {
@@ -114,6 +123,8 @@ func RenderFallbackComment(viewName string, row Row, reason string) string {
 	return fmt.Sprintf("/* Unable to generate DDL for view %s: %s\n%s\n*/", viewName, reason, string(encoded))
 }
 
+// EnsureTerminatedSQL guarantees the statement ends with a semicolon, adding
+// one if absent. Empty strings are returned unchanged.
 func EnsureTerminatedSQL(sqlText string) string {
 	trimmed := strings.TrimSpace(sqlText)
 	if trimmed == "" {
@@ -125,6 +136,8 @@ func EnsureTerminatedSQL(sqlText string) string {
 	return trimmed + ";"
 }
 
+// inferQualifiedObject builds a DDLRequest for objects whose rows follow the
+// standard <PREFIX>_CATALOG / <PREFIX>_SCHEMA / <PREFIX>_NAME pattern.
 func inferQualifiedObject(prefix string, objectType string, row Row) (DDLRequest, bool) {
 	catalog, okCatalog := getString(row, prefix+"_CATALOG")
 	schema, okSchema := getString(row, prefix+"_SCHEMA")
@@ -139,6 +152,8 @@ func inferQualifiedObject(prefix string, objectType string, row Row) (DDLRequest
 	}, true
 }
 
+// inferRoutineLikeObject builds a DDLRequest for procedures and functions,
+// appending the ARGUMENT_SIGNATURE to the qualified name when present.
 func inferRoutineLikeObject(prefix string, row Row, objectType string) (DDLRequest, bool) {
 	catalog, okCatalog := getString(row, prefix+"_CATALOG")
 	schema, okSchema := getString(row, prefix+"_SCHEMA")
@@ -364,6 +379,8 @@ func inferObjectNameFromPrivilegeRow(row Row) (string, bool) {
 	return quoteQualifiedName(objectName), true
 }
 
+// normalizeObjectType converts a raw type string to uppercase SQL token form,
+// defaulting to "OBJECT" when the string is blank.
 func normalizeObjectType(value string) string {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
@@ -372,6 +389,8 @@ func normalizeObjectType(value string) string {
 	return normalizeObjectToken(trimmed)
 }
 
+// normalizePrincipalType converts a grantee-type string to uppercase SQL form,
+// defaulting to "ROLE" when blank.
 func normalizePrincipalType(value string) string {
 	principal := normalizeObjectToken(value)
 	if principal == "" {
@@ -380,6 +399,8 @@ func normalizePrincipalType(value string) string {
 	return principal
 }
 
+// normalizeObjectToken upper-cases a token and collapses underscores/extra
+// whitespace to single spaces (e.g. "file_format" → "FILE FORMAT").
 func normalizeObjectToken(value string) string {
 	cleaned := strings.TrimSpace(value)
 	if cleaned == "" {
@@ -390,6 +411,8 @@ func normalizeObjectToken(value string) string {
 	return strings.ToUpper(cleaned)
 }
 
+// quoteIdentifier wraps value in double-quotes, escaping any embedded
+// double-quotes per SQL standard doubling rules.
 func quoteIdentifier(value string) string {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
@@ -398,10 +421,14 @@ func quoteIdentifier(value string) string {
 	return `"` + strings.ReplaceAll(trimmed, `"`, `""`) + `"`
 }
 
+// quoteLiteral wraps value in single-quotes, escaping embedded single-quotes
+// by doubling them per SQL standard rules.
 func quoteLiteral(value string) string {
 	return `'` + strings.ReplaceAll(value, `'`, `''`) + `'`
 }
 
+// normalizeSignature ensures a routine argument signature is wrapped in
+// parentheses, returning "()" when the signature is empty.
 func normalizeSignature(signature string) string {
 	trimmed := strings.TrimSpace(signature)
 	if trimmed == "" {
@@ -413,6 +440,9 @@ func normalizeSignature(signature string) string {
 	return "(" + trimmed + ")"
 }
 
+// quoteQualifiedName joins one or more identifier parts into a
+// fully-qualified double-quoted name (e.g. "DB"."SCHEMA"."TABLE").
+// Empty parts are silently skipped.
 func quoteQualifiedName(parts ...string) string {
 	quoted := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -425,6 +455,8 @@ func quoteQualifiedName(parts ...string) string {
 	return strings.Join(quoted, ".")
 }
 
+// getString retrieves a string value from a Row by key. It returns ("", false)
+// for missing keys, nil values, and blank strings.
 func getString(row Row, key string) (string, bool) {
 	value, ok := row[key]
 	if !ok || value == nil {
@@ -438,6 +470,7 @@ func getString(row Row, key string) (string, bool) {
 		}
 		return typed, true
 	default:
+		// Non-string columns (e.g. numbers) are converted via fmt.Sprint.
 		text := fmt.Sprint(typed)
 		if strings.TrimSpace(text) == "" || text == "<nil>" {
 			return "", false
@@ -446,6 +479,8 @@ func getString(row Row, key string) (string, bool) {
 	}
 }
 
+// sortedRow returns a copy of row with keys in alphabetical order, used to
+// produce stable JSON output in fallback comments.
 func sortedRow(row Row) map[string]any {
 	keys := make([]string, 0, len(row))
 	for key := range row {

@@ -1,15 +1,34 @@
+# macOS metadata files
 .DS_Store
+
+# Build output directories
 bin/
 dist/
+
+# Private keys – never commit credentials to version control
 keys/
+
+# Test coverage artefacts
 coverage.out
 coverage.html
+
+# Runtime-generated output and log directories
 logs/
 output/
+
+# Local environment variable files
 .env
 .env.*
+
+# Log files emitted during development runs
 *.log
+
+# PEM and Snowflake private-key files
 *.pem
 *.p8
+
+# Compiled binary produced by `go build`
 snowflake-reverse-engineer
+
+# Developer scratch notes
 notes.txt

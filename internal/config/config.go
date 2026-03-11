@@ -1,3 +1,5 @@
+// Package config defines the CLI flag set and runtime configuration for
+// the reverse-engineering tool.
 package config
 
 import (
@@ -10,32 +12,35 @@ import (
 )
 
 const (
-	defaultMaxConnections = 3
-	minimumMaxConnections = 1
-	maximumMaxConnections = 9
+	defaultMaxConnections = 3 // used when --max-connections is not provided
+	minimumMaxConnections = 1 // lower bound enforced by Validate
+	maximumMaxConnections = 9 // upper bound enforced by Validate
 )
 
+// Config holds all runtime parameters derived from CLI flags.
 type Config struct {
-	User                               string
-	Account                            string
-	Warehouse                          string
-	Database                           string
-	OutputDir                          string
-	LogDir                             string
-	PrivateKeyPath                     string
-	MaxConnections                     int
-	Passphrase                         string
-	CompactPackages                    bool
-	CompactPackagesMaxRuntimes         int
-	CompactPackagesOmitTruncationCount bool
-	TimestampedOutput                  bool
-	Verbose                            bool
-	RunTimestamp                       string
+	User                               string // Snowflake user name
+	Account                            string // Snowflake account identifier
+	Warehouse                          string // Snowflake virtual warehouse
+	Database                           string // target database to reverse-engineer
+	OutputDir                          string // directory for generated .sql files
+	LogDir                             string // directory for the run log
+	PrivateKeyPath                     string // path to the RSA private key file
+	MaxConnections                     int    // concurrent Snowflake connections
+	Passphrase                         string // private-key passphrase (may be empty)
+	CompactPackages                    bool   // group PACKAGES rows into compact lines
+	CompactPackagesMaxRuntimes         int    // max runtimes per compact group (0 = unlimited)
+	CompactPackagesOmitTruncationCount bool   // suppress "(truncated, N more)" suffix
+	TimestampedOutput                  bool   // append run timestamp to output file names
+	Verbose                            bool   // emit extra diagnostic log lines
+	RunTimestamp                       string // UTC timestamp set at parse time
 }
 
+// Parse parses args (typically os.Args[1:]) into a validated Config.
+// Returns an error for unknown flags or constraint violations.
 func Parse(args []string) (Config, error) {
 	fs := flag.NewFlagSet("snowflake-reverse-engineer", flag.ContinueOnError)
-	fs.Usage = func() {}
+	fs.Usage = func() {} // suppress the default usage output on parse error
 
 	var cfg Config
 	fs.StringVar(&cfg.User, "user", "", "Snowflake user name")
@@ -61,10 +66,13 @@ func Parse(args []string) (Config, error) {
 		return Config{}, err
 	}
 
+	// Record a single timestamp shared by all output file names in this run.
 	cfg.RunTimestamp = time.Now().UTC().Format("20060102T150405Z")
 	return cfg, nil
 }
 
+// Validate checks that all required flags are present and that numeric
+// constraints are satisfied. It does not verify whether paths exist on disk.
 func (c Config) Validate() error {
 	required := map[string]string{
 		"user":        c.User,
@@ -86,6 +94,7 @@ func (c Config) Validate() error {
 		return fmt.Errorf("missing required flags: %s", strings.Join(missing, ", "))
 	}
 
+	// Enforce the bounded connection pool range.
 	if c.MaxConnections < minimumMaxConnections || c.MaxConnections > maximumMaxConnections {
 		return fmt.Errorf("max-connections must be between %d and %d", minimumMaxConnections, maximumMaxConnections)
 	}
@@ -94,6 +103,7 @@ func (c Config) Validate() error {
 		return errors.New("compact-packages-max-runtimes must be 0 or greater")
 	}
 
+	// Reject degenerate paths such as "." or "/" to prevent accidental writes.
 	for _, dir := range []string{c.OutputDir, c.LogDir} {
 		cleanDir := filepath.Clean(dir)
 		if cleanDir == "." || cleanDir == string(filepath.Separator) {
@@ -104,15 +114,21 @@ func (c Config) Validate() error {
 	return nil
 }
 
+// LogFileName returns the log file base name, optionally suffixed with the
+// run timestamp when TimestampedOutput is enabled.
 func (c Config) LogFileName() string {
 	return withTimestamp("snowflake-reverse-engineer.log", c.TimestampedOutput, c.RunTimestamp)
 }
 
+// OutputFileName converts a view name into a lowercase .sql file name,
+// optionally suffixed with the run timestamp.
 func (c Config) OutputFileName(viewName string) string {
 	base := strings.ToLower(viewName) + ".sql"
 	return withTimestamp(base, c.TimestampedOutput, c.RunTimestamp)
 }
 
+// RedactedParameters returns every config field as a string map suitable for
+// logging; the passphrase is replaced with "***" when non-empty.
 func (c Config) RedactedParameters() map[string]string {
 	passphrase := "null"
 	if c.Passphrase != "" {
@@ -139,6 +155,8 @@ func (c Config) RedactedParameters() map[string]string {
 	}
 }
 
+// withTimestamp appends "_<timestamp>" before the file extension when enabled
+// is true; otherwise it returns fileName unchanged.
 func withTimestamp(fileName string, enabled bool, timestamp string) string {
 	if !enabled {
 		return fileName

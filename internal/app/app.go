@@ -1,3 +1,5 @@
+// Package app wires together configuration, Snowflake repository, and the
+// reverse-engineering service, then drives a single run to completion.
 package app
 
 import (
@@ -14,7 +16,10 @@ import (
 	"github.com/gmirsky/golang-snowflake-reverse-engineer/internal/snowflake"
 )
 
+// Run creates output/log directories, opens a log file, connects to Snowflake,
+// and then delegates all processing to the reverse-engineering service.
 func Run(cfg appconfig.Config) error {
+	// Ensure the output and log directories exist before anything tries to write.
 	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
@@ -22,6 +27,7 @@ func Run(cfg appconfig.Config) error {
 		return fmt.Errorf("create log directory: %w", err)
 	}
 
+	// Open (or create) the log file; truncate any prior run's content.
 	logPath := filepath.Join(cfg.LogDir, cfg.LogFileName())
 	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
@@ -29,11 +35,13 @@ func Run(cfg appconfig.Config) error {
 	}
 	defer logFile.Close()
 
+	// Mirror all log output to stdout and the log file.
 	logger := log.New(io.MultiWriter(os.Stdout, logFile), "", log.LstdFlags|log.LUTC)
 	logger.Printf("log_file=%s", logPath)
 	logParameters(logger, cfg)
 
 	ctx := context.Background()
+	// Open the Snowflake connection pool; close it when Run returns.
 	repo, err := snowflake.NewRepository(ctx, cfg)
 	if err != nil {
 		return err
@@ -42,6 +50,7 @@ func Run(cfg appconfig.Config) error {
 
 	service := reverseengineer.NewService(repo, logger, cfg)
 	summary, runErr := service.Run(ctx)
+	// Always log the summary even when Run returns an error.
 	logger.Printf("summary views=%d rows=%d sql_statements=%d files=%d", summary.ViewsProcessed, summary.RowsProcessed, summary.StatementsGenerated, summary.FilesWritten)
 	if runErr != nil {
 		return runErr
@@ -50,6 +59,8 @@ func Run(cfg appconfig.Config) error {
 	return nil
 }
 
+// logParameters writes every redacted config parameter to the logger in
+// stable alphabetical order so log output is reproducible.
 func logParameters(logger *log.Logger, cfg appconfig.Config) {
 	params := cfg.RedactedParameters()
 	keys := make([]string, 0, len(params))

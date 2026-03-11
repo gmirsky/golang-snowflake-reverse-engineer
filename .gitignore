@@ -1,0 +1,15 @@
+.DS_Store
+bin/
+dist/
+keys/
+coverage.out
+coverage.html
+logs/
+output/
+.env
+.env.*
+*.log
+*.pem
+*.p8
+snowflake-reverse-engineer
+notes.txt

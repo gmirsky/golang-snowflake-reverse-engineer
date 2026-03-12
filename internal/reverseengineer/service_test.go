@@ -314,6 +314,63 @@ func TestServiceRunProcessesStorageIntegrations(t *testing.T) {
 	}
 }
 
+func TestServiceRunWritesBU91777StorageIntegrationToTimestampedOutputFile(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{
+		Database:          "DEMO_DB",
+		OutputDir:         outputDir,
+		LogDir:            outputDir,
+		MaxConnections:    2,
+		TimestampedOutput: true,
+		RunTimestamp:      "20260312T000000Z",
+	}
+
+	repo := fakeRepo{
+		views:               []string{},
+		rows:                map[string][]Row{},
+		ddls:                map[string]string{},
+		storageIntegrations: []string{"INTG_CC_ALWAYS_ON_LANDING"},
+		storageIntegRows: map[string][]Row{
+			"INTG_CC_ALWAYS_ON_LANDING": {
+				{"PROPERTY": "ENABLED", "PROPERTY_VALUE": "true"},
+				{"PROPERTY": "STORAGE_PROVIDER", "PROPERTY_VALUE": "S3"},
+				{"PROPERTY": "STORAGE_AWS_ROLE_ARN", "PROPERTY_VALUE": "arn:aws:iam::123456789012:role/bu91777-role"},
+				{"PROPERTY": "STORAGE_ALLOWED_LOCATIONS", "PROPERTY_VALUE": "s3://cc-always-on-landing/"},
+			},
+		},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	summary, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if summary.FilesWritten != 1 {
+		t.Fatalf("expected 1 file written, got %d", summary.FilesWritten)
+	}
+
+	expectedPath := filepath.Join(outputDir, cfg.OutputFileName(storageIntegrationsViewName))
+	content, err := os.ReadFile(expectedPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%q) error = %v", expectedPath, err)
+	}
+
+	output := string(content)
+	for _, want := range []string{
+		`"INTG_CC_ALWAYS_ON_LANDING"`,
+		"TYPE = EXTERNAL_STAGE",
+		"STORAGE_PROVIDER = 'S3'",
+		"STORAGE_ALLOWED_LOCATIONS = ('s3://cc-always-on-landing/')",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %s to contain %q, got:\n%s", expectedPath, want, output)
+		}
+	}
+}
+
 func TestServiceRunWritesStorageIntegrationsFileWhenEmpty(t *testing.T) {
 	t.Parallel()
 

@@ -25,6 +25,6 @@ type Repository interface {
 	ListViews(ctx context.Context, database string) ([]string, error)
 	FetchViewRows(ctx context.Context, database string, viewName string) ([]Row, error)
 	FetchDDL(ctx context.Context, request DDLRequest) (string, error)
-	ListStorageIntegrations(ctx context.Context) ([]string, error)          // SHOW INTEGRATIONS filtered to type=STORAGE
+	ListStorageIntegrations(ctx context.Context) ([]string, error)          // SHOW INTEGRATIONS filtered to storage integrations
 	DescStorageIntegration(ctx context.Context, name string) ([]Row, error) // DESC STORAGE INTEGRATION <name>
 }

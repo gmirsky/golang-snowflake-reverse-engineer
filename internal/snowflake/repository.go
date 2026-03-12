@@ -121,7 +121,8 @@ func (r *Repository) FetchDDL(ctx context.Context, request reverseengineer.DDLRe
 }
 
 // ListStorageIntegrations executes SHOW INTEGRATIONS and returns the names of
-// all integrations whose type is STORAGE.
+// storage integrations. In Snowflake, SHOW INTEGRATIONS reports storage
+// integrations with CATEGORY=STORAGE and TYPE=EXTERNAL_STAGE.
 func (r *Repository) ListStorageIntegrations(ctx context.Context) ([]string, error) {
 	rows, err := r.db.QueryContext(ctx, "SHOW INTEGRATIONS")
 	if err != nil {
@@ -136,12 +137,7 @@ func (r *Repository) ListStorageIntegrations(ctx context.Context) ([]string, err
 
 	var names []string
 	for _, row := range allRows {
-		// Filter to rows where TYPE equals "STORAGE" (case-insensitive).
-		rawType, ok := row["TYPE"]
-		if !ok {
-			continue
-		}
-		if !strings.EqualFold(strings.TrimSpace(fmt.Sprint(rawType)), "STORAGE") {
+		if !isStorageIntegrationRow(row) {
 			continue
 		}
 		rawName, ok := row["NAME"]
@@ -155,6 +151,16 @@ func (r *Repository) ListStorageIntegrations(ctx context.Context) ([]string, err
 	}
 
 	return names, nil
+}
+
+func isStorageIntegrationRow(row reverseengineer.Row) bool {
+	if strings.EqualFold(strings.TrimSpace(fmt.Sprint(row["CATEGORY"])), "STORAGE") {
+		return true
+	}
+
+	// Backward-compatible fallback in case SHOW INTEGRATIONS is projected
+	// without CATEGORY and older logic depended on TYPE=STORAGE.
+	return strings.EqualFold(strings.TrimSpace(fmt.Sprint(row["TYPE"])), "STORAGE")
 }
 
 // DescStorageIntegration executes DESC STORAGE INTEGRATION <name> and returns

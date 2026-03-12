@@ -111,7 +111,14 @@ Paste the output as the value inside the single quotes in the `ALTER USER` state
 ```bash
 go mod tidy
 go test ./...
+govulncheck ./...
 go build ./cmd/snowflake-reverse-engineer
+```
+
+If `govulncheck` is not installed locally, install it with:
+
+```bash
+go install golang.org/x/vuln/cmd/govulncheck@latest
 ```
 
 ## Taskfile usage
@@ -140,6 +147,7 @@ Other available tasks:
 
 ```bash
 task tidy
+task vuln
 task docker-build
 task podman-build
 task clean

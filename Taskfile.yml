@@ -21,6 +21,19 @@ tasks:
     cmds:
       - go test ./...
 
+  vuln:
+    desc: Run Go vulnerability scan with govulncheck
+    cmds:
+      - |
+        BIN="$(go env GOBIN)"
+        if [ -z "$BIN" ]; then
+          BIN="$(go env GOPATH)/bin"
+        fi
+        if [ ! -x "$BIN/govulncheck" ]; then
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+        fi
+        "$BIN/govulncheck" ./...
+
   build:
     desc: Build local binary
     cmds:

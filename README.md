@@ -153,6 +153,7 @@ task image-check
 task image-update
 task actions-check
 task actions-update
+task module-rename -- github.com/example/golang-snowflake-reverse-engineer
 task module-diagram-print
 task module-diagram-update
 task docker-build
@@ -208,6 +209,30 @@ task actions-check
 task actions-update
 ```
 
+### Renaming the Go module path for template use
+
+The repository includes `scripts/rename_module_path.sh` to rewrite the current
+module path from `go.mod` across repository text files such as Go source,
+docs, and maintenance scripts.
+
+Preview the files that would change:
+
+```bash
+bash ./scripts/rename_module_path.sh --dry-run github.com/example/golang-snowflake-reverse-engineer
+```
+
+Apply the rename in place:
+
+```bash
+bash ./scripts/rename_module_path.sh github.com/example/golang-snowflake-reverse-engineer
+```
+
+Equivalent optional Taskfile wrapper:
+
+```bash
+task module-rename -- github.com/example/golang-snowflake-reverse-engineer
+```
+
 ### Script maintenance notes
 
 The `scripts` directory contains small automation helpers that are safe to run
@@ -248,6 +273,21 @@ locally and in CI. Use this section as a quick maintenance guide.
 - Exit codes:
   - `0`: up to date or successfully updated.
   - `1`: required tool missing, API lookup failure, or drift in check mode.
+  - `2`: invalid CLI arguments.
+
+`scripts/rename_module_path.sh`
+
+- Purpose: Rewrites the current Go module path from `go.mod` across repository
+  text files for fork/template workflows.
+- Modes:
+  - `--dry-run`: prints files that would be updated without changing them.
+- Requirements: `perl` available in `PATH` (`rg` is used when available,
+  otherwise the script falls back to `find`).
+- Notes: Skips generated/runtime directories such as `bin/`, `logs/`,
+  `output/`, and `keys/`.
+- Exit codes:
+  - `0`: rename succeeded, dry run succeeded, or no matching files were found.
+  - `1`: required tools/files missing or replacement failed.
   - `2`: invalid CLI arguments.
 
 `scripts/generate_module_dependency_diagram.sh`

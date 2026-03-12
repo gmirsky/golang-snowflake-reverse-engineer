@@ -61,6 +61,11 @@ tasks:
     cmds:
       - bash ./scripts/update_github_actions.sh --update
 
+  module-rename:
+    desc: Optionally rename the Go module path across repository text files
+    cmds:
+      - bash ./scripts/rename_module_path.sh {{.CLI_ARGS}}
+
   module-diagram-print:
     desc: Optionally print the generated Go module dependency Mermaid diagram
     cmds:

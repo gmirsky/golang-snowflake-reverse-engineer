@@ -68,13 +68,11 @@ func (s *Service) Run(ctx context.Context) (RunSummary, error) {
 
 		var wg sync.WaitGroup
 		for range workerCount {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				for viewName := range jobs {
 					results <- s.processView(ctx, viewName)
 				}
-			}()
+			})
 		}
 
 		// Feed view names to workers, then close results once all workers drain.
@@ -263,14 +261,6 @@ func (s *Service) processStorageIntegrations(ctx context.Context) viewResult {
 func sanitizeFileName(fileName string) string {
 	replacer := strings.NewReplacer("/", "_", `\\`, "_", " ", "_", ":", "_")
 	return replacer.Replace(fileName)
-}
-
-// min: Given two integers, when compared, then the smaller value is returned.
-func min(a int, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // packageGroupKey is the composite key used to collapse PACKAGES rows that

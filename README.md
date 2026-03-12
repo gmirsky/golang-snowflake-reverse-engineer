@@ -149,9 +149,35 @@ Other available tasks:
 task tidy
 task comment-check
 task vuln
+task image-check
+task image-update
 task docker-build
 task podman-build
 task clean
+```
+
+### Updating pinned Chainguard image digests
+
+The repository includes `scripts/update_chainguard_images.sh` to keep pinned
+Chainguard image digests in `Dockerfile` and `Containerfile` up to date.
+
+Check only (no file changes). Exits `1` when digests are out of date:
+
+```bash
+bash ./scripts/update_chainguard_images.sh --check
+```
+
+Update both files in place when newer digests are available:
+
+```bash
+bash ./scripts/update_chainguard_images.sh --update
+```
+
+Equivalent optional Taskfile wrappers:
+
+```bash
+task image-check
+task image-update
 ```
 
 ## Container build

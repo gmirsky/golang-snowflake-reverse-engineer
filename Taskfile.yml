@@ -41,6 +41,16 @@ tasks:
         fi
         "$BIN/govulncheck" ./...
 
+  image-check:
+    desc: Optionally check whether pinned Chainguard image digests are up to date
+    cmds:
+      - bash ./scripts/update_chainguard_images.sh --check
+
+  image-update:
+    desc: Optionally update pinned Chainguard image digests in Dockerfile and Containerfile
+    cmds:
+      - bash ./scripts/update_chainguard_images.sh --update
+
   build:
     desc: Build local binary
     cmds:

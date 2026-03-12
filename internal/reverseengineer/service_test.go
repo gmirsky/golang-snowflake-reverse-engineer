@@ -135,13 +135,13 @@ func TestServiceRunCompactsPackages(t *testing.T) {
 					"PACKAGE_NAME":    "abi3audit",
 					"VERSION":         "0.0.24",
 					"LANGUAGE":        "python",
-					"RUNTIME_VERSION": "3.10",
+					"RUNTIME_VERSION": "3.12",
 				},
 				{
 					"PACKAGE_NAME":    "abi3audit",
 					"VERSION":         "0.0.24",
 					"LANGUAGE":        "python",
-					"RUNTIME_VERSION": "3.11",
+					"RUNTIME_VERSION": "3.13",
 				},
 				{
 					"PACKAGE_NAME": "abi3audit",
@@ -169,7 +169,7 @@ func TestServiceRunCompactsPackages(t *testing.T) {
 	}
 
 	output := string(content)
-	if !strings.Contains(output, "runtimes [\"3.10\", \"3.11\", \"default\"]") {
+	if !strings.Contains(output, "runtimes [\"3.12\", \"3.13\", \"default\"]") {
 		t.Fatalf("expected grouped runtimes in output, got %s", output)
 	}
 }
@@ -193,9 +193,9 @@ func TestServiceRunCompactsPackagesWithRuntimeCap(t *testing.T) {
 		views: []string{"PACKAGES"},
 		rows: map[string][]Row{
 			"PACKAGES": {
-				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.10"},
-				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.11"},
 				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.12"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.13"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.14"},
 			},
 		},
 		ddls: map[string]string{},
@@ -213,7 +213,7 @@ func TestServiceRunCompactsPackagesWithRuntimeCap(t *testing.T) {
 	}
 
 	output := string(content)
-	if !strings.Contains(output, "runtimes [\"3.10\", \"3.11\"] (truncated, 1 more)") {
+	if !strings.Contains(output, "runtimes [\"3.12\", \"3.13\"] (truncated, 1 more)") {
 		t.Fatalf("expected capped runtime list in output, got %s", output)
 	}
 }
@@ -238,9 +238,9 @@ func TestServiceRunCompactsPackagesWithRuntimeCapOmitTruncationCount(t *testing.
 		views: []string{"PACKAGES"},
 		rows: map[string][]Row{
 			"PACKAGES": {
-				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.10"},
-				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.11"},
 				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.12"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.13"},
+				{"PACKAGE_NAME": "abi3audit", "VERSION": "0.0.24", "LANGUAGE": "python", "RUNTIME_VERSION": "3.14"},
 			},
 		},
 		ddls: map[string]string{},
@@ -258,7 +258,7 @@ func TestServiceRunCompactsPackagesWithRuntimeCapOmitTruncationCount(t *testing.
 	}
 
 	output := string(content)
-	if !strings.Contains(output, "runtimes [\"3.10\", \"3.11\"]") {
+	if !strings.Contains(output, "runtimes [\"3.12\", \"3.13\"]") {
 		t.Fatalf("expected capped runtime list in output, got %s", output)
 	}
 	if strings.Contains(output, "truncated,") {

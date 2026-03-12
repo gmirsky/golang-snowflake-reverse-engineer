@@ -1,5 +1,6 @@
 name: CI
 
+
 on:
   push:
     branches:
@@ -21,12 +22,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache: true
+          cache: 'true'
 
       - name: Install govulncheck
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Check comment style
         run: bash ./scripts/check_comment_style.sh
@@ -35,4 +34,7 @@ jobs:
         run: go test ./...
 
       - name: Run vulnerability scan
-        run: govulncheck ./...
+        run: |
+          BIN="$(go env GOBIN)"
+          if [ -z "$BIN" ]; then BIN="$(go env GOPATH)/bin"; fi
+          "$BIN/govulncheck" ./...

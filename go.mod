@@ -1,6 +1,6 @@
 module github.com/gmirsky/golang-snowflake-reverse-engineer
 
-go 1.26.0
+go 1.26.1
 
 require (
 	github.com/snowflakedb/gosnowflake/v2 v2.0.0

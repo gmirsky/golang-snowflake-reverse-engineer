@@ -1,0 +1,48 @@
+version: '3'
+
+vars:
+  BINARY_NAME: snowflake-reverse-engineer
+  MAIN_PACKAGE: ./cmd/snowflake-reverse-engineer
+
+# Run `task` to build the binary.
+tasks:
+  default:
+    desc: Build the project binary
+    cmds:
+      - task: build
+
+  tidy:
+    desc: Tidy module dependencies
+    cmds:
+      - go mod tidy
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test ./...
+
+  build:
+    desc: Build local binary
+    cmds:
+      - mkdir -p ./bin
+      - go build -trimpath -ldflags="-s -w" -o ./bin/{{.BINARY_NAME}} {{.MAIN_PACKAGE}}
+
+  run:
+    desc: Run the CLI locally (pass args after --)
+    cmds:
+      - go run {{.MAIN_PACKAGE}} {{.CLI_ARGS}}
+
+  docker-build:
+    desc: Build container image with Docker
+    cmds:
+      - docker build -t {{.BINARY_NAME}}:local .
+
+  podman-build:
+    desc: Build container image with Podman
+    cmds:
+      - podman build -f Containerfile --ignorefile .containerignore -t {{.BINARY_NAME}}:podman .
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf ./bin

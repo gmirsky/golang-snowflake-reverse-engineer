@@ -114,6 +114,37 @@ go test ./...
 go build ./cmd/snowflake-reverse-engineer
 ```
 
+## Taskfile usage
+
+This repository includes a `Taskfile.yml` for common development workflows.
+
+Build the project binary:
+
+```bash
+task build
+```
+
+Run tests:
+
+```bash
+task test
+```
+
+Run the CLI locally with arguments:
+
+```bash
+task run -- CLI_ARGS="--user demo_user --account demo_account --warehouse demo_wh --database demo_db --output-dir ./output --log-dir ./logs --private-key ./keys/rsa_key.p8"
+```
+
+Other available tasks:
+
+```bash
+task tidy
+task docker-build
+task podman-build
+task clean
+```
+
 ## Container build
 
 Build for the current platform:

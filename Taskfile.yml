@@ -51,6 +51,16 @@ tasks:
     cmds:
       - bash ./scripts/update_chainguard_images.sh --update
 
+  actions-check:
+    desc: Optionally check whether GitHub Actions in ci.yml are up to date
+    cmds:
+      - bash ./scripts/update_github_actions.sh --check
+
+  actions-update:
+    desc: Optionally update GitHub Actions in ci.yml to latest stable releases
+    cmds:
+      - bash ./scripts/update_github_actions.sh --update
+
   build:
     desc: Build local binary
     cmds:

@@ -151,6 +151,8 @@ task comment-check
 task vuln
 task image-check
 task image-update
+task actions-check
+task actions-update
 task docker-build
 task podman-build
 task clean
@@ -179,6 +181,72 @@ Equivalent optional Taskfile wrappers:
 task image-check
 task image-update
 ```
+
+### Updating GitHub Actions versions in ci.yml
+
+The repository includes `scripts/update_github_actions.sh` to check and update
+action versions referenced by `.github/workflows/ci.yml`.
+
+Check only (no file changes). Exits `1` when one or more actions are out of date:
+
+```bash
+bash ./scripts/update_github_actions.sh --check
+```
+
+Update action references in place to latest stable release tags:
+
+```bash
+bash ./scripts/update_github_actions.sh --update
+```
+
+Equivalent optional Taskfile wrappers:
+
+```bash
+task actions-check
+task actions-update
+```
+
+### Script maintenance notes
+
+The `scripts` directory contains small automation helpers that are safe to run
+locally and in CI. Use this section as a quick maintenance guide.
+
+`scripts/check_comment_style.sh`
+
+- Purpose: Enforces exported Go function doc comments to include a
+  `// <FuncName>:` prefix and the `Given` / `when` / `then` keywords.
+- Inputs: Scans all `.go` files in the repository (uses `rg` when available,
+  otherwise falls back to `find`).
+- Exit codes:
+  - `0`: all files pass.
+  - `1`: one or more style violations were found.
+
+`scripts/update_chainguard_images.sh`
+
+- Purpose: Checks or updates pinned Chainguard image digests in
+  `Dockerfile` and `Containerfile`.
+- Modes:
+  - `--check`: reports drift and exits non-zero when digests are out of date.
+  - `--update`: updates both files in place when newer digests exist.
+- Requirements: Docker with `buildx` support.
+- Exit codes:
+  - `0`: up to date or successfully updated.
+  - `1`: required tool missing or drift detected in check mode.
+  - `2`: invalid CLI arguments.
+
+`scripts/update_github_actions.sh`
+
+- Purpose: Checks or updates `uses:` references in `.github/workflows/ci.yml`
+  to latest stable GitHub release tags.
+- Modes:
+  - `--check`: reports outdated action refs and exits non-zero when drift exists.
+  - `--update`: updates outdated refs in place.
+- Requirements: `curl` (and optional `GITHUB_TOKEN` to reduce GitHub API
+  rate-limit issues).
+- Exit codes:
+  - `0`: up to date or successfully updated.
+  - `1`: required tool missing, API lookup failure, or drift in check mode.
+  - `2`: invalid CLI arguments.
 
 ## Container build
 

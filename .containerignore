@@ -22,5 +22,5 @@ keys
 *.pem
 *.p8
 
-# OS/editor noise
+# OS/editor and programmer files
 .DS_Store

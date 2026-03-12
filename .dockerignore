@@ -1,10 +1,26 @@
+# VCS and editor metadata
 .git
 .gitignore
 .vscode
+
+# Build and runtime artifacts
 bin
 dist
 logs
 output
+
+# Local coverage artifacts
 coverage.out
 coverage.html
+
+# Local-only documentation/notes
 README.md
+notes.txt
+
+# Secrets and key material
+keys
+*.pem
+*.p8
+
+# OS/editor noise
+.DS_Store

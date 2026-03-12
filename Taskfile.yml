@@ -1,7 +1,9 @@
 version: '3'
 
 vars:
+  # Output binary name used by build/container tasks.
   BINARY_NAME: snowflake-reverse-engineer
+  # Main package entrypoint for run/build commands.
   MAIN_PACKAGE: ./cmd/snowflake-reverse-engineer
 
 # Run `task` to build the binary.
@@ -19,6 +21,7 @@ tasks:
   test:
     desc: Run unit tests
     deps:
+      # Enforce exported-comment conventions before test execution.
       - comment-check
     cmds:
       - go test ./...
@@ -31,6 +34,7 @@ tasks:
   vuln:
     desc: Run Go vulnerability scan with govulncheck
     cmds:
+      # Install govulncheck on demand in GOBIN/GOPATH/bin.
       - |
         BIN="$(go env GOBIN)"
         if [ -z "$BIN" ]; then
@@ -64,6 +68,7 @@ tasks:
   module-rename:
     desc: Optionally rename the Go module path across repository text files
     cmds:
+      # Pass the new module path via CLI args, e.g. task module-rename -- github.com/acme/repo.
       - bash ./scripts/rename_module_path.sh {{.CLI_ARGS}}
 
   module-diagram-print:
@@ -85,6 +90,7 @@ tasks:
   run:
     desc: Run the CLI locally (pass args after --)
     cmds:
+      # Example: task run -- --user ... --account ...
       - go run {{.MAIN_PACKAGE}} {{.CLI_ARGS}}
 
   docker-build:
@@ -100,4 +106,5 @@ tasks:
   clean:
     desc: Remove build artifacts
     cmds:
+      # Keep output/logs for inspection; only clear compiled binaries.
       - rm -rf ./bin

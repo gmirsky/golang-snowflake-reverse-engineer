@@ -28,6 +28,9 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      - name: Check comment style
+        run: bash ./scripts/check_comment_style.sh
+
       - name: Run tests
         run: go test ./...
 

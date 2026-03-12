@@ -12,6 +12,8 @@ import (
 	appconfig "github.com/gmirsky/golang-snowflake-reverse-engineer/internal/config"
 )
 
+// fakeRepo is a minimal in-memory implementation of Repository used to drive
+// deterministic service tests without opening real Snowflake connections.
 type fakeRepo struct {
 	views               []string
 	rows                map[string][]Row
@@ -20,22 +22,32 @@ type fakeRepo struct {
 	storageIntegRows    map[string][]Row
 }
 
+// ListViews: Given a fake repository, when view discovery runs, then fixture
+// view names are returned.
 func (f fakeRepo) ListViews(_ context.Context, _ string) ([]string, error) {
 	return f.views, nil
 }
 
+// FetchViewRows: Given a view name, when row retrieval runs, then fixture rows
+// for that view are returned.
 func (f fakeRepo) FetchViewRows(_ context.Context, _ string, viewName string) ([]Row, error) {
 	return f.rows[viewName], nil
 }
 
+// FetchDDL: Given an inferred request, when DDL retrieval runs, then fixture
+// DDL text is returned by qualified object name.
 func (f fakeRepo) FetchDDL(_ context.Context, request DDLRequest) (string, error) {
 	return f.ddls[request.QualifiedName], nil
 }
 
+// ListStorageIntegrations: Given fake integration data, when listing runs,
+// then fixture integration names are returned.
 func (f fakeRepo) ListStorageIntegrations(_ context.Context) ([]string, error) {
 	return f.storageIntegrations, nil
 }
 
+// DescStorageIntegration: Given an integration name, when DESC retrieval runs,
+// then configured fixture rows are returned.
 func (f fakeRepo) DescStorageIntegration(_ context.Context, name string) ([]Row, error) {
 	if f.storageIntegRows == nil {
 		return nil, nil
@@ -43,6 +55,8 @@ func (f fakeRepo) DescStorageIntegration(_ context.Context, name string) ([]Row,
 	return f.storageIntegRows[name], nil
 }
 
+// TestServiceRunWritesFiles: Given mixed view data, when Service.Run executes,
+// then it should write DDL files and no-data sentinels deterministically.
 func TestServiceRunWritesFiles(t *testing.T) {
 	t.Parallel()
 
@@ -99,6 +113,8 @@ func TestServiceRunWritesFiles(t *testing.T) {
 	}
 }
 
+// TestServiceRunCompactsPackages: Given duplicate package rows, when compact
+// mode runs, then runtimes should collapse into one summarized line.
 func TestServiceRunCompactsPackages(t *testing.T) {
 	t.Parallel()
 
@@ -158,6 +174,8 @@ func TestServiceRunCompactsPackages(t *testing.T) {
 	}
 }
 
+// TestServiceRunCompactsPackagesWithRuntimeCap: Given many runtime values,
+// when capped compact mode runs, then truncation should be advertised.
 func TestServiceRunCompactsPackagesWithRuntimeCap(t *testing.T) {
 	t.Parallel()
 
@@ -200,6 +218,8 @@ func TestServiceRunCompactsPackagesWithRuntimeCap(t *testing.T) {
 	}
 }
 
+// TestServiceRunCompactsPackagesWithRuntimeCapOmitTruncationCount: Given
+// truncation-count suppression, when capped compact mode runs, then suffix text should be omitted.
 func TestServiceRunCompactsPackagesWithRuntimeCapOmitTruncationCount(t *testing.T) {
 	t.Parallel()
 
@@ -246,6 +266,8 @@ func TestServiceRunCompactsPackagesWithRuntimeCapOmitTruncationCount(t *testing.
 	}
 }
 
+// TestServiceRunProcessesStorageIntegrations: Given storage integration DESC
+// rows, when Service.Run executes, then reconstructed DDL should exclude read-only fields.
 func TestServiceRunProcessesStorageIntegrations(t *testing.T) {
 	t.Parallel()
 
@@ -314,6 +336,8 @@ func TestServiceRunProcessesStorageIntegrations(t *testing.T) {
 	}
 }
 
+// TestServiceRunWritesBU91777StorageIntegrationToTimestampedOutputFile: Given
+// BU91777 integration data and timestamped output, when Service.Run executes, then the expected timestamped file should contain correct DDL.
 func TestServiceRunWritesBU91777StorageIntegrationToTimestampedOutputFile(t *testing.T) {
 	t.Parallel()
 
@@ -371,6 +395,8 @@ func TestServiceRunWritesBU91777StorageIntegrationToTimestampedOutputFile(t *tes
 	}
 }
 
+// TestServiceRunWritesStorageIntegrationsFileWhenEmpty: Given no storage
+// integrations, when Service.Run executes, then a deterministic no-data file should be written.
 func TestServiceRunWritesStorageIntegrationsFileWhenEmpty(t *testing.T) {
 	t.Parallel()
 

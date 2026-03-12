@@ -2,6 +2,8 @@ package reverseengineer
 
 import "testing"
 
+// TestInferDDLRequestForTable: Given a TABLES row, when InferDDLRequest runs,
+// then it should return a TABLE request with the expected qualified name.
 func TestInferDDLRequestForTable(t *testing.T) {
 	t.Parallel()
 
@@ -22,6 +24,8 @@ func TestInferDDLRequestForTable(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForProcedure: Given a PROCEDURES row, when inference
+// runs, then the argument signature should be preserved in the name.
 func TestInferDDLRequestForProcedure(t *testing.T) {
 	t.Parallel()
 
@@ -42,6 +46,8 @@ func TestInferDDLRequestForProcedure(t *testing.T) {
 	}
 }
 
+// TestRenderFallbackComment: Given an unsupported row, when fallback rendering
+// runs, then output should be a deterministic SQL comment.
 func TestRenderFallbackComment(t *testing.T) {
 	t.Parallel()
 
@@ -54,6 +60,8 @@ func TestRenderFallbackComment(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForApplicableRoles: Given APPLICABLE_ROLES data, when
+// inference runs, then role relationships should be emitted as inline SQL.
 func TestInferDDLRequestForApplicableRoles(t *testing.T) {
 	t.Parallel()
 
@@ -73,6 +81,8 @@ func TestInferDDLRequestForApplicableRoles(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForEnabledRoles: Given ENABLED_ROLES data, when
+// inference runs, then the enabled role should be emitted as inline SQL.
 func TestInferDDLRequestForEnabledRoles(t *testing.T) {
 	t.Parallel()
 
@@ -91,6 +101,8 @@ func TestInferDDLRequestForEnabledRoles(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForObjectPrivileges: Given OBJECT_PRIVILEGES data, when
+// inference runs, then a normalized GRANT statement should be returned.
 func TestInferDDLRequestForObjectPrivileges(t *testing.T) {
 	t.Parallel()
 
@@ -115,6 +127,8 @@ func TestInferDDLRequestForObjectPrivileges(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForShares: Given SHARES data, when inference runs, then
+// output should be CREATE SHARE SQL with propagated comment text.
 func TestInferDDLRequestForShares(t *testing.T) {
 	t.Parallel()
 
@@ -134,6 +148,8 @@ func TestInferDDLRequestForShares(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForListings: Given LISTINGS data, when inference runs,
+// then output should describe listing-to-share linkage.
 func TestInferDDLRequestForListings(t *testing.T) {
 	t.Parallel()
 
@@ -153,6 +169,8 @@ func TestInferDDLRequestForListings(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForDatabases: Given DATABASES data, when inference runs,
+// then standard databases should map to CREATE DATABASE SQL.
 func TestInferDDLRequestForDatabases(t *testing.T) {
 	t.Parallel()
 
@@ -171,6 +189,8 @@ func TestInferDDLRequestForDatabases(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForElementTypes: Given ELEMENT_TYPES data, when
+// inference runs, then output should preserve metadata as descriptive SQL.
 func TestInferDDLRequestForElementTypes(t *testing.T) {
 	t.Parallel()
 
@@ -191,6 +211,8 @@ func TestInferDDLRequestForElementTypes(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForPackages: Given PACKAGES data, when inference runs,
+// then package metadata should be emitted as inline comments.
 func TestInferDDLRequestForPackages(t *testing.T) {
 	t.Parallel()
 
@@ -209,6 +231,8 @@ func TestInferDDLRequestForPackages(t *testing.T) {
 	}
 }
 
+// TestInferDDLRequestForReplicationGroups: Given REPLICATION_GROUPS data,
+// when inference runs, then output should be an informational SQL comment.
 func TestInferDDLRequestForReplicationGroups(t *testing.T) {
 	t.Parallel()
 

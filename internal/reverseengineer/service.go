@@ -41,15 +41,15 @@ type viewResult struct {
 	Err                 error
 }
 
-// NewService constructs a Service bound to the given repository, logger, and config.
+// NewService: Given dependencies and config, when construction runs, then a
+// ready-to-use Service is returned.
 func NewService(repo Repository, logger *log.Logger, cfg appconfig.Config) *Service {
 	return &Service{repo: repo, logger: logger, cfg: cfg}
 }
 
-// Run executes the full pipeline: INFORMATION_SCHEMA views are processed
-// concurrently up to MaxConnections; storage integrations follow serially.
-// A non-nil error is returned only when one or more views/steps fail; the
-// summary is always populated with the work that did succeed.
+// Run: Given a repository and runtime config, when execution starts, then
+// INFORMATION_SCHEMA views run concurrently and storage integrations run serially.
+// Even on failures, the returned summary reflects completed work.
 func (s *Service) Run(ctx context.Context) (RunSummary, error) {
 	views, err := s.repo.ListViews(ctx, s.cfg.Database)
 	if err != nil {
@@ -62,6 +62,7 @@ func (s *Service) Run(ctx context.Context) (RunSummary, error) {
 
 	// Process INFORMATION_SCHEMA views concurrently.
 	if workerCount := min(s.cfg.MaxConnections, len(views)); workerCount > 0 {
+		// jobs fan out view names, results fan in worker outcomes.
 		jobs := make(chan string)
 		results := make(chan viewResult)
 
@@ -87,6 +88,7 @@ func (s *Service) Run(ctx context.Context) (RunSummary, error) {
 		}()
 
 		for result := range results {
+			// Aggregate metrics first so the final summary reflects both successes and failures.
 			summary.ViewsProcessed++
 			summary.RowsProcessed += result.RowsProcessed
 			summary.StatementsGenerated += result.StatementsGenerated
@@ -95,6 +97,7 @@ func (s *Service) Run(ctx context.Context) (RunSummary, error) {
 			}
 
 			if result.Err != nil {
+				// Keep processing other views even when one view fails, then report all failures at end.
 				failures = append(failures, fmt.Sprintf("%s: %v", result.ViewName, result.Err))
 				s.logger.Printf("view=%s error=%v", result.ViewName, result.Err)
 				continue
@@ -126,8 +129,8 @@ func (s *Service) Run(ctx context.Context) (RunSummary, error) {
 	return summary, nil
 }
 
-// processView fetches rows for one INFORMATION_SCHEMA view and writes the
-// corresponding SQL output file. It is designed to run in a worker goroutine.
+// processView: Given one view name, when rows are fetched and inferred, then
+// SQL output for that view is written as one deterministic file.
 func (s *Service) processView(ctx context.Context, viewName string) viewResult {
 	rows, err := s.repo.FetchViewRows(ctx, s.cfg.Database, viewName)
 	if err != nil {
@@ -198,9 +201,8 @@ func (s *Service) processView(ctx context.Context, viewName string) viewResult {
 // output file naming of the storage integrations step.
 const storageIntegrationsViewName = "STORAGE_INTEGRATIONS"
 
-// processStorageIntegrations lists all storage-type integrations via
-// SHOW INTEGRATIONS, then calls DESC STORAGE INTEGRATION for each one and
-// builds CREATE STORAGE INTEGRATION DDL. Always writes storage_integrations.sql.
+// processStorageIntegrations: Given storage integration metadata, when this
+// step runs, then CREATE STORAGE INTEGRATION statements are reconstructed and written.
 func (s *Service) processStorageIntegrations(ctx context.Context) viewResult {
 	names, err := s.repo.ListStorageIntegrations(ctx)
 	if err != nil {
@@ -256,14 +258,14 @@ func (s *Service) processStorageIntegrations(ctx context.Context) viewResult {
 	}
 }
 
-// sanitizeFileName replaces characters that are illegal or undesirable in file
-// names (slashes, backslashes, spaces, colons) with underscores.
+// sanitizeFileName: Given a file name, when sanitization runs, then path-like
+// or unsafe separators are normalized to underscores.
 func sanitizeFileName(fileName string) string {
 	replacer := strings.NewReplacer("/", "_", `\\`, "_", " ", "_", ":", "_")
 	return replacer.Replace(fileName)
 }
 
-// min returns the smaller of a and b.
+// min: Given two integers, when compared, then the smaller value is returned.
 func min(a int, b int) int {
 	if a < b {
 		return a
@@ -279,9 +281,8 @@ type packageGroupKey struct {
 	Language    string
 }
 
-// renderCompactPackages groups PACKAGES rows by (PackageName, Version, Language),
-// collects all distinct RUNTIME_VERSION values per group, and emits one comment
-// line per group. maxRuntimes caps the runtime list (0 = unlimited).
+// renderCompactPackages: Given PACKAGES rows, when compact rendering runs, then
+// rows are grouped and emitted as one summarized line per package/version/language.
 func renderCompactPackages(rows []Row, maxRuntimes int, omitTruncationCount bool) []string {
 	grouped := make(map[packageGroupKey]map[string]struct{})
 	outputBlocks := make([]string, 0, len(rows))

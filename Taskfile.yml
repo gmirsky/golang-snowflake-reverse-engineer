@@ -18,8 +18,15 @@ tasks:
 
   test:
     desc: Run unit tests
+    deps:
+      - comment-check
     cmds:
       - go test ./...
+
+  comment-check:
+    desc: Validate Given/When/Then style doc comments for exported functions
+    cmds:
+      - bash ./scripts/check_comment_style.sh
 
   vuln:
     desc: Run Go vulnerability scan with govulncheck

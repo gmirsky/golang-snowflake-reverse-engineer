@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-// InferDDLRequest examines a single INFORMATION_SCHEMA row and returns the
-// DDLRequest that describes how to fetch or construct its DDL. Returns false
-// when the row cannot be mapped to a known object shape.
+// InferDDLRequest: Given one INFORMATION_SCHEMA row, when inference runs, then
+// either a fetchable/inline DDL request is returned or the row is marked unsupported.
 func InferDDLRequest(database string, viewName string, row Row) (DDLRequest, bool) {
+	// Handle views that map to inline SQL comments/GRANTs before GET_DDL paths.
 	if request, ok := inferPrivilegeAndRoleView(viewName, row); ok {
 		request.ViewName = viewName
 		request.Row = row
@@ -42,6 +42,8 @@ func InferDDLRequest(database string, viewName string, row Row) (DDLRequest, boo
 		{prefix: "FILE_FORMAT", objectType: "FILE FORMAT"},
 		{prefix: "DYNAMIC_TABLE", objectType: "DYNAMIC TABLE"},
 	} {
+		// Many INFORMATION_SCHEMA views follow the same PREFIX_CATALOG/SCHEMA/NAME layout,
+		// so this loop handles those patterns without repeating similar code blocks.
 		if request, ok := inferQualifiedObject(candidate.prefix, candidate.objectType, row); ok {
 			request.ViewName = viewName
 			request.Row = row
@@ -53,6 +55,7 @@ func InferDDLRequest(database string, viewName string, row Row) (DDLRequest, boo
 		tableSchema, okSchema := getString(row, "TABLE_SCHEMA")
 		tableName, okName := getString(row, "TABLE_NAME")
 		if okSchema && okName {
+			// TABLE_TYPE and viewName together disambiguate TABLE vs VIEW output paths.
 			objectType := "TABLE"
 			if tableType, ok := getString(row, "TABLE_TYPE"); ok {
 				upper := strings.ToUpper(tableType)
@@ -106,14 +109,14 @@ func InferDDLRequest(database string, viewName string, row Row) (DDLRequest, boo
 	return DDLRequest{}, false
 }
 
-// RenderNoDataComment returns a SQL block comment indicating that the given
-// view contained no rows during this run.
+// RenderNoDataComment: Given a view name, when no rows exist, then a no-data
+// SQL comment is returned for deterministic output.
 func RenderNoDataComment(viewName string) string {
 	return fmt.Sprintf("/* No data found in the view %s */\n", viewName)
 }
 
-// RenderFallbackComment returns a SQL block comment embedding the JSON-encoded
-// row metadata when DDL inference fails, so information is never silently lost.
+// RenderFallbackComment: Given inference failure context, when fallback runs,
+// then JSON metadata is embedded in a SQL comment instead of being discarded.
 func RenderFallbackComment(viewName string, row Row, reason string) string {
 	encoded, err := json.MarshalIndent(sortedRow(row), "", "  ")
 	if err != nil {
@@ -123,8 +126,8 @@ func RenderFallbackComment(viewName string, row Row, reason string) string {
 	return fmt.Sprintf("/* Unable to generate DDL for view %s: %s\n%s\n*/", viewName, reason, string(encoded))
 }
 
-// EnsureTerminatedSQL guarantees the statement ends with a semicolon, adding
-// one if absent. Empty strings are returned unchanged.
+// EnsureTerminatedSQL: Given SQL text, when termination is checked, then one
+// trailing semicolon is ensured for executable output.
 func EnsureTerminatedSQL(sqlText string) string {
 	trimmed := strings.TrimSpace(sqlText)
 	if trimmed == "" {
@@ -136,8 +139,8 @@ func EnsureTerminatedSQL(sqlText string) string {
 	return trimmed + ";"
 }
 
-// inferQualifiedObject builds a DDLRequest for objects whose rows follow the
-// standard <PREFIX>_CATALOG / <PREFIX>_SCHEMA / <PREFIX>_NAME pattern.
+// inferQualifiedObject: Given prefix-shaped row fields, when all parts exist,
+// then a qualified DDL request is produced.
 func inferQualifiedObject(prefix string, objectType string, row Row) (DDLRequest, bool) {
 	catalog, okCatalog := getString(row, prefix+"_CATALOG")
 	schema, okSchema := getString(row, prefix+"_SCHEMA")
@@ -152,8 +155,8 @@ func inferQualifiedObject(prefix string, objectType string, row Row) (DDLRequest
 	}, true
 }
 
-// inferRoutineLikeObject builds a DDLRequest for procedures and functions,
-// appending the ARGUMENT_SIGNATURE to the qualified name when present.
+// inferRoutineLikeObject: Given routine metadata, when inference runs, then
+// a qualified routine name with optional signature is produced.
 func inferRoutineLikeObject(prefix string, row Row, objectType string) (DDLRequest, bool) {
 	catalog, okCatalog := getString(row, prefix+"_CATALOG")
 	schema, okSchema := getString(row, prefix+"_SCHEMA")

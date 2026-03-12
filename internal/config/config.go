@@ -36,9 +36,10 @@ type Config struct {
 	RunTimestamp                       string // UTC timestamp set at parse time
 }
 
-// Parse parses args (typically os.Args[1:]) into a validated Config.
-// Returns an error for unknown flags or constraint violations.
+// Parse: Given CLI args, when parsing and validation run, then a normalized
+// Config is returned or an error explains invalid input.
 func Parse(args []string) (Config, error) {
+	// ContinueOnError lets us return parse errors to callers instead of exiting.
 	fs := flag.NewFlagSet("snowflake-reverse-engineer", flag.ContinueOnError)
 	fs.Usage = func() {} // suppress the default usage output on parse error
 
@@ -71,8 +72,8 @@ func Parse(args []string) (Config, error) {
 	return cfg, nil
 }
 
-// Validate checks that all required flags are present and that numeric
-// constraints are satisfied. It does not verify whether paths exist on disk.
+// Validate: Given a Config, when constraints are checked, then missing flags
+// or invalid numeric/path values are rejected.
 func (c Config) Validate() error {
 	required := map[string]string{
 		"user":        c.User,
@@ -86,6 +87,7 @@ func (c Config) Validate() error {
 
 	missing := make([]string, 0)
 	for key, value := range required {
+		// Treat whitespace-only values as missing to avoid invalid downstream paths.
 		if strings.TrimSpace(value) == "" {
 			missing = append(missing, key)
 		}
@@ -114,21 +116,21 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// LogFileName returns the log file base name, optionally suffixed with the
-// run timestamp when TimestampedOutput is enabled.
+// LogFileName: Given timestamp settings, when a log filename is requested,
+// then the base name is returned with optional timestamp suffix.
 func (c Config) LogFileName() string {
 	return withTimestamp("snowflake-reverse-engineer.log", c.TimestampedOutput, c.RunTimestamp)
 }
 
-// OutputFileName converts a view name into a lowercase .sql file name,
-// optionally suffixed with the run timestamp.
+// OutputFileName: Given a view name, when output naming runs, then a lowercase
+// .sql filename is returned with optional timestamp suffix.
 func (c Config) OutputFileName(viewName string) string {
 	base := strings.ToLower(viewName) + ".sql"
 	return withTimestamp(base, c.TimestampedOutput, c.RunTimestamp)
 }
 
-// RedactedParameters returns every config field as a string map suitable for
-// logging; the passphrase is replaced with "***" when non-empty.
+// RedactedParameters: Given runtime config values, when log-safe parameters are
+// requested, then all fields are returned with secrets redacted.
 func (c Config) RedactedParameters() map[string]string {
 	passphrase := "null"
 	if c.Passphrase != "" {
@@ -155,8 +157,8 @@ func (c Config) RedactedParameters() map[string]string {
 	}
 }
 
-// withTimestamp appends "_<timestamp>" before the file extension when enabled
-// is true; otherwise it returns fileName unchanged.
+// withTimestamp: Given a file name and toggle, when timestamping is enabled,
+// then the timestamp is inserted before the extension.
 func withTimestamp(fileName string, enabled bool, timestamp string) string {
 	if !enabled {
 		return fileName

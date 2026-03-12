@@ -16,8 +16,8 @@ import (
 	"github.com/gmirsky/golang-snowflake-reverse-engineer/internal/snowflake"
 )
 
-// Run creates output/log directories, opens a log file, connects to Snowflake,
-// and then delegates all processing to the reverse-engineering service.
+// Run: Given a validated config, when orchestration starts, then required
+// directories, logging, repository setup, and service execution are performed.
 func Run(cfg appconfig.Config) error {
 	// Ensure the output and log directories exist before anything tries to write.
 	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
@@ -48,6 +48,7 @@ func Run(cfg appconfig.Config) error {
 	}
 	defer repo.Close()
 
+	// The service encapsulates all reverse-engineering logic so Run remains thin.
 	service := reverseengineer.NewService(repo, logger, cfg)
 	summary, runErr := service.Run(ctx)
 	// Always log the summary even when Run returns an error.
@@ -59,8 +60,8 @@ func Run(cfg appconfig.Config) error {
 	return nil
 }
 
-// logParameters writes every redacted config parameter to the logger in
-// stable alphabetical order so log output is reproducible.
+// logParameters: Given redacted parameter data, when values are logged, then
+// keys are emitted in alphabetical order for deterministic output.
 func logParameters(logger *log.Logger, cfg appconfig.Config) {
 	params := cfg.RedactedParameters()
 	keys := make([]string, 0, len(params))

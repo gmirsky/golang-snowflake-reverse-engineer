@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+// TestLoadPrivateKey: Given a generated RSA key serialized to PEM, when
+// LoadPrivateKey runs, then the returned key material should match exactly.
 func TestLoadPrivateKey(t *testing.T) {
 	t.Parallel()
 

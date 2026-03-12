@@ -147,6 +147,7 @@ Other available tasks:
 
 ```bash
 task tidy
+task comment-check
 task vuln
 task docker-build
 task podman-build

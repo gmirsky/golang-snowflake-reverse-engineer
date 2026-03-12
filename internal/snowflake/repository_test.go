@@ -6,6 +6,8 @@ import (
 	"github.com/gmirsky/golang-snowflake-reverse-engineer/internal/reverseengineer"
 )
 
+// TestIsStorageIntegrationRow_UsesCategoryStorage: Given CATEGORY=STORAGE,
+// when row classification runs, then it should be treated as storage.
 func TestIsStorageIntegrationRow_UsesCategoryStorage(t *testing.T) {
 	t.Parallel()
 
@@ -20,6 +22,8 @@ func TestIsStorageIntegrationRow_UsesCategoryStorage(t *testing.T) {
 	}
 }
 
+// TestIsStorageIntegrationRow_FallsBackToTypeStorage: Given legacy TYPE data,
+// when row classification runs, then TYPE=STORAGE should still be accepted.
 func TestIsStorageIntegrationRow_FallsBackToTypeStorage(t *testing.T) {
 	t.Parallel()
 
@@ -33,6 +37,8 @@ func TestIsStorageIntegrationRow_FallsBackToTypeStorage(t *testing.T) {
 	}
 }
 
+// TestIsStorageIntegrationRow_RejectsNonStorageIntegration: Given non-storage
+// integration data, when row classification runs, then it should be rejected.
 func TestIsStorageIntegrationRow_RejectsNonStorageIntegration(t *testing.T) {
 	t.Parallel()
 

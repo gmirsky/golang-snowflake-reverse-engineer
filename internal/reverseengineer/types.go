@@ -22,8 +22,14 @@ type DDLRequest struct {
 // Repository abstracts all Snowflake I/O so that the service layer can be
 // tested with a fake implementation without a live connection.
 type Repository interface {
+	// ListViews: Given a database, when discovery runs, then source
+	// INFORMATION_SCHEMA view names are returned.
 	ListViews(ctx context.Context, database string) ([]string, error)
+	// FetchViewRows: Given one view, when retrieval runs, then all rows are
+	// returned as normalized maps.
 	FetchViewRows(ctx context.Context, database string, viewName string) ([]Row, error)
+	// FetchDDL: Given an inferred request, when GET_DDL runs, then object DDL is
+	// returned for resolvable rows.
 	FetchDDL(ctx context.Context, request DDLRequest) (string, error)
 	ListStorageIntegrations(ctx context.Context) ([]string, error)          // SHOW INTEGRATIONS filtered to storage integrations
 	DescStorageIntegration(ctx context.Context, name string) ([]Row, error) // DESC STORAGE INTEGRATION <name>

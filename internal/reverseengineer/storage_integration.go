@@ -16,8 +16,8 @@ var readOnlyStorageIntegrationProperties = map[string]bool{
 	"STORAGE_GCP_SERVICE_ACCOUNT": true,
 }
 
-// BuildStorageIntegrationDDL reconstructs a CREATE STORAGE INTEGRATION statement
-// from the rows returned by DESC STORAGE INTEGRATION <name>.
+// BuildStorageIntegrationDDL: Given DESC STORAGE INTEGRATION rows, when DDL
+// reconstruction runs, then a CREATE STORAGE INTEGRATION statement is produced.
 //
 // Each row is expected to have PROPERTY and PROPERTY_VALUE columns (uppercased,
 // as produced by the Snowflake repository's scanRows). Read-only properties that
@@ -32,6 +32,7 @@ func BuildStorageIntegrationDDL(name string, descRows []Row) (string, bool) {
 
 	props := descRowsToMap(descRows)
 
+	// STORAGE_PROVIDER determines which provider-specific properties are valid.
 	provider, ok := props["STORAGE_PROVIDER"]
 	if !ok || strings.TrimSpace(provider) == "" {
 		return "", false
@@ -84,9 +85,8 @@ func BuildStorageIntegrationDDL(name string, descRows []Row) (string, bool) {
 	return b.String(), true
 }
 
-// descRowsToMap converts DESC STORAGE INTEGRATION rows into a PROPERTY→value map.
-// Keys are normalised to uppercase. Read-only Snowflake-managed properties and
-// rows without a PROPERTY column are excluded.
+// descRowsToMap: Given DESC rows, when normalization runs, then uppercase
+// PROPERTY keys are mapped to values while unsupported/read-only rows are skipped.
 func descRowsToMap(rows []Row) map[string]string {
 	props := make(map[string]string, len(rows))
 	for _, row := range rows {
@@ -105,9 +105,8 @@ func descRowsToMap(rows []Row) map[string]string {
 	return props
 }
 
-// storageLocationsToTuple converts a comma-separated list of storage location
-// URIs (as returned by DESC STORAGE INTEGRATION) into a SQL tuple of
-// single-quoted strings ready for use in a CREATE STORAGE INTEGRATION statement.
+// storageLocationsToTuple: Given comma-separated locations, when conversion
+// runs, then a safely quoted SQL tuple string is returned.
 //
 // Example: "s3://bucket/path/,s3://other/path/" → "'s3://bucket/path/', 's3://other/path/'"
 func storageLocationsToTuple(locations string) string {

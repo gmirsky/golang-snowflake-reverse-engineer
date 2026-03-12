@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// TestBuildStorageIntegrationDDL_S3: Given S3 DESC rows, when DDL building
+// runs, then expected fields should be emitted and read-only ones omitted.
 func TestBuildStorageIntegrationDDL_S3(t *testing.T) {
 	t.Parallel()
 
@@ -51,6 +53,8 @@ func TestBuildStorageIntegrationDDL_S3(t *testing.T) {
 	}
 }
 
+// TestBuildStorageIntegrationDDL_S3_Disabled: Given ENABLED=false, when DDL
+// building runs, then the statement should preserve the disabled state.
 func TestBuildStorageIntegrationDDL_S3_Disabled(t *testing.T) {
 	t.Parallel()
 
@@ -70,6 +74,8 @@ func TestBuildStorageIntegrationDDL_S3_Disabled(t *testing.T) {
 	}
 }
 
+// TestBuildStorageIntegrationDDL_Azure: Given Azure DESC rows, when DDL
+// building runs, then Azure fields should be emitted and generated ones omitted.
 func TestBuildStorageIntegrationDDL_Azure(t *testing.T) {
 	t.Parallel()
 
@@ -105,6 +111,8 @@ func TestBuildStorageIntegrationDDL_Azure(t *testing.T) {
 	}
 }
 
+// TestBuildStorageIntegrationDDL_GCS: Given GCS DESC rows, when DDL building
+// runs, then provider and locations should appear without read-only metadata.
 func TestBuildStorageIntegrationDDL_GCS(t *testing.T) {
 	t.Parallel()
 
@@ -132,6 +140,8 @@ func TestBuildStorageIntegrationDDL_GCS(t *testing.T) {
 	}
 }
 
+// TestBuildStorageIntegrationDDL_DefaultsAllowedLocationsToStar: Given no
+// allowed locations, when DDL building runs, then '*' should be used.
 func TestBuildStorageIntegrationDDL_DefaultsAllowedLocationsToStar(t *testing.T) {
 	t.Parallel()
 
@@ -151,6 +161,8 @@ func TestBuildStorageIntegrationDDL_DefaultsAllowedLocationsToStar(t *testing.T)
 	}
 }
 
+// TestBuildStorageIntegrationDDL_EmptyRows: Given no DESC rows, when DDL
+// building runs, then it should fail deterministically.
 func TestBuildStorageIntegrationDDL_EmptyRows(t *testing.T) {
 	t.Parallel()
 
@@ -160,6 +172,8 @@ func TestBuildStorageIntegrationDDL_EmptyRows(t *testing.T) {
 	}
 }
 
+// TestBuildStorageIntegrationDDL_MissingProvider: Given rows without provider,
+// when DDL building runs, then it should fail deterministically.
 func TestBuildStorageIntegrationDDL_MissingProvider(t *testing.T) {
 	t.Parallel()
 
@@ -174,6 +188,8 @@ func TestBuildStorageIntegrationDDL_MissingProvider(t *testing.T) {
 	}
 }
 
+// TestStorageLocationsToTuple: Given comma-separated locations, when tuple
+// conversion runs, then output should be normalized and safely quoted.
 func TestStorageLocationsToTuple(t *testing.T) {
 	t.Parallel()
 

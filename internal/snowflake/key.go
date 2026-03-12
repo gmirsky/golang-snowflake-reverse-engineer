@@ -10,8 +10,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// LoadPrivateKey reads a PEM-encoded PKCS#8 RSA private key from path.
-// When passphrase is non-empty the key is decrypted before parsing.
+// LoadPrivateKey: Given a key path and optional passphrase, when loading runs,
+// then a parsed RSA private key is returned.
 func LoadPrivateKey(path string, passphrase string) (*rsa.PrivateKey, error) {
 	keyBytes, err := os.ReadFile(path)
 	if err != nil {
@@ -20,8 +20,10 @@ func LoadPrivateKey(path string, passphrase string) (*rsa.PrivateKey, error) {
 
 	var parsed any
 	if passphrase == "" {
+		// ParseRawPrivateKey handles unencrypted PEM/PKCS#8 content.
 		parsed, err = ssh.ParseRawPrivateKey(keyBytes)
 	} else {
+		// Use passphrase-aware parser when the key file is encrypted.
 		parsed, err = ssh.ParseRawPrivateKeyWithPassphrase(keyBytes, []byte(passphrase))
 	}
 	if err != nil {

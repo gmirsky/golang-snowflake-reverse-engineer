@@ -22,6 +22,8 @@ func newMockRepo(t *testing.T) (*Repository, sqlmock.Sqlmock) {
 	return &Repository{db: db}, mock
 }
 
+// TestRepositoryCloseNilReceiver: Given a nil repository receiver, when Close
+// is called, then it should return nil error.
 func TestRepositoryCloseNilReceiver(t *testing.T) {
 	t.Parallel()
 
@@ -31,6 +33,8 @@ func TestRepositoryCloseNilReceiver(t *testing.T) {
 	}
 }
 
+// TestRepositoryCloseNilDB: Given a repository with nil DB handle, when Close
+// is called, then it should return nil error.
 func TestRepositoryCloseNilDB(t *testing.T) {
 	t.Parallel()
 
@@ -40,6 +44,8 @@ func TestRepositoryCloseNilDB(t *testing.T) {
 	}
 }
 
+// TestRepositoryListViewsReturnsRows: Given mocked INFORMATION_SCHEMA rows,
+// when ListViews runs, then it should return ordered view names.
 func TestRepositoryListViewsReturnsRows(t *testing.T) {
 	t.Parallel()
 
@@ -60,6 +66,8 @@ func TestRepositoryListViewsReturnsRows(t *testing.T) {
 	}
 }
 
+// TestRepositoryListViewsQueryError: Given a query failure, when ListViews
+// runs, then it should return a wrapped query error.
 func TestRepositoryListViewsQueryError(t *testing.T) {
 	t.Parallel()
 
@@ -73,6 +81,8 @@ func TestRepositoryListViewsQueryError(t *testing.T) {
 	}
 }
 
+// TestRepositoryListViewsScanError: Given an invalid row value, when
+// ListViews scans results, then it should return a wrapped scan error.
 func TestRepositoryListViewsScanError(t *testing.T) {
 	t.Parallel()
 
@@ -87,6 +97,8 @@ func TestRepositoryListViewsScanError(t *testing.T) {
 	}
 }
 
+// TestRepositoryListViewsIterationError: Given a row iteration failure, when
+// ListViews iterates rows, then it should return a wrapped iteration error.
 func TestRepositoryListViewsIterationError(t *testing.T) {
 	t.Parallel()
 
@@ -101,6 +113,8 @@ func TestRepositoryListViewsIterationError(t *testing.T) {
 	}
 }
 
+// TestRepositoryFetchViewRowsNormalizesValuesAndKeys: Given mixed typed values,
+// when FetchViewRows runs, then keys and values should be normalized.
 func TestRepositoryFetchViewRowsNormalizesValuesAndKeys(t *testing.T) {
 	t.Parallel()
 
@@ -130,6 +144,8 @@ func TestRepositoryFetchViewRowsNormalizesValuesAndKeys(t *testing.T) {
 	}
 }
 
+// TestRepositoryFetchViewRowsQueryError: Given a view query failure, when
+// FetchViewRows runs, then it should return a wrapped query error.
 func TestRepositoryFetchViewRowsQueryError(t *testing.T) {
 	t.Parallel()
 
@@ -143,6 +159,8 @@ func TestRepositoryFetchViewRowsQueryError(t *testing.T) {
 	}
 }
 
+// TestRepositoryFetchViewRowsIterationError: Given a row iteration failure,
+// when FetchViewRows iterates rows, then it should return wrapped error.
 func TestRepositoryFetchViewRowsIterationError(t *testing.T) {
 	t.Parallel()
 
@@ -157,6 +175,8 @@ func TestRepositoryFetchViewRowsIterationError(t *testing.T) {
 	}
 }
 
+// TestRepositoryFetchDDL: Given different GET_DDL outcomes, when FetchDDL runs,
+// then it should return DDL or expected wrapped errors.
 func TestRepositoryFetchDDL(t *testing.T) {
 	t.Parallel()
 
@@ -204,6 +224,8 @@ func TestRepositoryFetchDDL(t *testing.T) {
 	}
 }
 
+// TestRepositoryListStorageIntegrationsFiltersStorage: Given SHOW INTEGRATIONS
+// rows, when ListStorageIntegrations runs, then only storage integrations remain.
 func TestRepositoryListStorageIntegrationsFiltersStorage(t *testing.T) {
 	t.Parallel()
 
@@ -224,6 +246,8 @@ func TestRepositoryListStorageIntegrationsFiltersStorage(t *testing.T) {
 	}
 }
 
+// TestRepositoryListStorageIntegrationsQueryError: Given SHOW INTEGRATIONS
+// query failure, when ListStorageIntegrations runs, then wrapped error is returned.
 func TestRepositoryListStorageIntegrationsQueryError(t *testing.T) {
 	t.Parallel()
 
@@ -236,6 +260,8 @@ func TestRepositoryListStorageIntegrationsQueryError(t *testing.T) {
 	}
 }
 
+// TestRepositoryListStorageIntegrationsScanError: Given row scanning failure,
+// when ListStorageIntegrations runs, then wrapped scan error is returned.
 func TestRepositoryListStorageIntegrationsScanError(t *testing.T) {
 	t.Parallel()
 
@@ -251,6 +277,8 @@ func TestRepositoryListStorageIntegrationsScanError(t *testing.T) {
 	}
 }
 
+// TestRepositoryDescStorageIntegration: Given DESC STORAGE INTEGRATION results,
+// when DescStorageIntegration runs, then rows or wrapped errors are returned.
 func TestRepositoryDescStorageIntegration(t *testing.T) {
 	t.Parallel()
 

@@ -45,6 +45,8 @@ func TestLoadPrivateKey(t *testing.T) {
 	}
 }
 
+// TestLoadPrivateKeyMissingFile: Given a missing key file path, when
+// LoadPrivateKey runs, then it should return a wrapped read error.
 func TestLoadPrivateKeyMissingFile(t *testing.T) {
 	t.Parallel()
 
@@ -54,6 +56,8 @@ func TestLoadPrivateKeyMissingFile(t *testing.T) {
 	}
 }
 
+// TestLoadPrivateKeyInvalidPEM: Given non-PEM file content, when
+// LoadPrivateKey runs, then it should return a wrapped parse error.
 func TestLoadPrivateKeyInvalidPEM(t *testing.T) {
 	t.Parallel()
 
@@ -68,6 +72,8 @@ func TestLoadPrivateKeyInvalidPEM(t *testing.T) {
 	}
 }
 
+// TestLoadPrivateKeyEncryptedWithPassphrase: Given an encrypted PEM key, when
+// LoadPrivateKey runs with correct passphrase, then it should load successfully.
 func TestLoadPrivateKeyEncryptedWithPassphrase(t *testing.T) {
 	t.Parallel()
 
@@ -96,6 +102,8 @@ func TestLoadPrivateKeyEncryptedWithPassphrase(t *testing.T) {
 	}
 }
 
+// TestLoadPrivateKeyWrongPassphrase: Given an encrypted PEM key, when
+// LoadPrivateKey runs with wrong passphrase, then parse error is returned.
 func TestLoadPrivateKeyWrongPassphrase(t *testing.T) {
 	t.Parallel()
 
@@ -121,6 +129,8 @@ func TestLoadPrivateKeyWrongPassphrase(t *testing.T) {
 	}
 }
 
+// TestLoadPrivateKeyRejectsNonRSAKey: Given a non-RSA private key, when
+// LoadPrivateKey runs, then it should reject the key type.
 func TestLoadPrivateKeyRejectsNonRSAKey(t *testing.T) {
 	t.Parallel()
 

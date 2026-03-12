@@ -18,15 +18,31 @@ import (
 
 type testRepo struct{}
 
+// ListViews: Given a fake repository, when view listing is requested, then
+// it returns no rows and no error for deterministic tests.
 func (testRepo) ListViews(context.Context, string) ([]string, error) { return nil, nil }
+
+// FetchViewRows: Given a fake repository, when view rows are requested, then
+// it returns no rows and no error for deterministic tests.
 func (testRepo) FetchViewRows(context.Context, string, string) ([]reverseengineer.Row, error) {
 	return nil, nil
 }
+
+// FetchDDL: Given a fake repository, when DDL is requested, then it returns
+// an empty DDL string and no error for deterministic tests.
 func (testRepo) FetchDDL(context.Context, reverseengineer.DDLRequest) (string, error) { return "", nil }
+
+// ListStorageIntegrations: Given a fake repository, when storage integrations
+// are requested, then it returns no rows and no error.
 func (testRepo) ListStorageIntegrations(context.Context) ([]string, error)            { return nil, nil }
+
+// DescStorageIntegration: Given a fake repository, when integration details
+// are requested, then it returns no rows and no error.
 func (testRepo) DescStorageIntegration(context.Context, string) ([]reverseengineer.Row, error) {
 	return nil, nil
 }
+
+// Close: Given a fake repository, when close is requested, then it returns nil.
 func (testRepo) Close() error { return nil }
 
 type testService struct {
@@ -34,6 +50,8 @@ type testService struct {
 	err     error
 }
 
+// Run: Given a fake service, when Run is invoked, then it returns the preset
+// summary and error for deterministic orchestration tests.
 func (s testService) Run(context.Context) (reverseengineer.RunSummary, error) {
 	return s.summary, s.err
 }
@@ -134,6 +152,8 @@ func TestLogParametersWritesSortedKeys(t *testing.T) {
 	}
 }
 
+// TestRunReturnsRepositoryError: Given openRepository failure, when Run
+// executes, then it should return the repository error.
 func TestRunReturnsRepositoryError(t *testing.T) {
 	tempDir := t.TempDir()
 
@@ -163,6 +183,8 @@ func TestRunReturnsRepositoryError(t *testing.T) {
 	}
 }
 
+// TestRunReturnsServiceError: Given service Run failure, when app Run executes,
+// then it should return the service error.
 func TestRunReturnsServiceError(t *testing.T) {
 	tempDir := t.TempDir()
 
@@ -191,6 +213,8 @@ func TestRunReturnsServiceError(t *testing.T) {
 	}
 }
 
+// TestRunSuccessWithInjectedDependencies: Given successful repository and
+// service fakes, when Run executes, then it should succeed without error.
 func TestRunSuccessWithInjectedDependencies(t *testing.T) {
 	tempDir := t.TempDir()
 

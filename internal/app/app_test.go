@@ -23,7 +23,7 @@ func (testRepo) FetchViewRows(context.Context, string, string) ([]reverseenginee
 	return nil, nil
 }
 func (testRepo) FetchDDL(context.Context, reverseengineer.DDLRequest) (string, error) { return "", nil }
-func (testRepo) ListStorageIntegrations(context.Context) ([]string, error)             { return nil, nil }
+func (testRepo) ListStorageIntegrations(context.Context) ([]string, error)            { return nil, nil }
 func (testRepo) DescStorageIntegration(context.Context, string) ([]reverseengineer.Row, error) {
 	return nil, nil
 }

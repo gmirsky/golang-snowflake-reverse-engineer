@@ -63,6 +63,12 @@ func Parse(args []string) (Config, error) {
 		return Config{}, err
 	}
 
+	// Normalize user, account, warehouse, and database to uppercase for consistency.
+	cfg.User = strings.ToUpper(cfg.User)
+	cfg.Account = strings.ToUpper(cfg.Account)
+	cfg.Warehouse = strings.ToUpper(cfg.Warehouse)
+	cfg.Database = strings.ToUpper(cfg.Database)
+
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}

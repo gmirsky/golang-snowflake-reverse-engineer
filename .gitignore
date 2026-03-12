@@ -11,6 +11,7 @@ keys/
 # Test coverage artefacts
 coverage.out
 coverage.html
+coverage.*.out
 
 # Runtime-generated output and log directories
 logs/

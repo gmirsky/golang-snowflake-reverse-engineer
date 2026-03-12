@@ -2,9 +2,9 @@
 # Enables BuildKit-specific directives (heredocs, cache mounts, etc.).
 
 # --- build stage ---------------------------------------------------
-# Use the host platform for compilation so cross-compilation works
-# without requiring QEMU on the build machine.
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+# Use Chainguard's Go builder image for a hardened software supply chain.
+# The -dev variant includes build tooling needed by `go mod` and `go build`.
+FROM --platform=$BUILDPLATFORM cgr.dev/chainguard/go:latest-dev@sha256:7538dc60b012b069bc82f8558c4cceb05cf33ab7cf9aad3926887635c22e6063 AS builder
 
 # TARGETOS / TARGETARCH are injected by `docker buildx build --platform`.
 ARG TARGETOS
@@ -24,13 +24,13 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/snowflake-reverse-engineer ./cmd/snowflake-reverse-engineer
 
 # --- runtime stage -------------------------------------------------
-# Use a minimal Alpine image; no Go toolchain is needed at runtime.
-FROM alpine:3.21
-
-# ca-certificates is required for TLS connections to Snowflake endpoints.
-RUN apk add --no-cache ca-certificates
+# Use Chainguard's minimal static runtime image to reduce attack surface.
+FROM cgr.dev/chainguard/static:latest@sha256:2fdfacc8d61164aa9e20909dceec7cc28b9feb66580e8e1a65b9f2443c53b61b
 
 WORKDIR /app
+
+# Run as an unprivileged user by default.
+USER 65532:65532
 
 # Copy only the compiled binary from the builder stage.
 COPY --from=builder /out/snowflake-reverse-engineer /usr/local/bin/snowflake-reverse-engineer

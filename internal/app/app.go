@@ -16,6 +16,23 @@ import (
 	"github.com/gmirsky/golang-snowflake-reverse-engineer/internal/snowflake"
 )
 
+type repositoryWithClose interface {
+	reverseengineer.Repository
+	Close() error
+}
+
+type runnableService interface {
+	Run(ctx context.Context) (reverseengineer.RunSummary, error)
+}
+
+var openRepository = func(ctx context.Context, cfg appconfig.Config) (repositoryWithClose, error) {
+	return snowflake.NewRepository(ctx, cfg)
+}
+
+var buildService = func(repo reverseengineer.Repository, logger *log.Logger, cfg appconfig.Config) runnableService {
+	return reverseengineer.NewService(repo, logger, cfg)
+}
+
 // Run: Given a validated config, when orchestration starts, then required
 // directories, logging, repository setup, and service execution are performed.
 func Run(cfg appconfig.Config) error {
@@ -42,14 +59,14 @@ func Run(cfg appconfig.Config) error {
 
 	ctx := context.Background()
 	// Open the Snowflake connection pool; close it when Run returns.
-	repo, err := snowflake.NewRepository(ctx, cfg)
+	repo, err := openRepository(ctx, cfg)
 	if err != nil {
 		return err
 	}
 	defer repo.Close()
 
 	// The service encapsulates all reverse-engineering logic so Run remains thin.
-	service := reverseengineer.NewService(repo, logger, cfg)
+	service := buildService(repo, logger, cfg)
 	summary, runErr := service.Run(ctx)
 	// Always log the summary even when Run returns an error.
 	logger.Printf("summary views=%d rows=%d sql_statements=%d files=%d", summary.ViewsProcessed, summary.RowsProcessed, summary.StatementsGenerated, summary.FilesWritten)

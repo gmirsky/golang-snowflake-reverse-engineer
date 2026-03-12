@@ -200,3 +200,72 @@ func TestRedactedParametersMasksPassphrase(t *testing.T) {
 		t.Fatalf("expected masked passphrase, got %q", params["passphrase"])
 	}
 }
+
+// TestLogFileName: Given timestamp settings, when log filename generation
+// runs, then names should include or omit timestamp as configured.
+func TestLogFileName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("timestamp disabled", func(t *testing.T) {
+		cfg := Config{TimestampedOutput: false, RunTimestamp: "20260312T190000Z"}
+		if got := cfg.LogFileName(); got != "snowflake-reverse-engineer.log" {
+			t.Fatalf("LogFileName() = %q, want %q", got, "snowflake-reverse-engineer.log")
+		}
+	})
+
+	t.Run("timestamp enabled", func(t *testing.T) {
+		cfg := Config{TimestampedOutput: true, RunTimestamp: "20260312T190000Z"}
+		if got := cfg.LogFileName(); got != "snowflake-reverse-engineer_20260312T190000Z.log" {
+			t.Fatalf("LogFileName() = %q, want %q", got, "snowflake-reverse-engineer_20260312T190000Z.log")
+		}
+	})
+}
+
+// TestOutputFileName: Given a view name and timestamp setting, when output
+// filename generation runs, then names should be lowercase with optional suffix.
+func TestOutputFileName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("lowercase without timestamp", func(t *testing.T) {
+		cfg := Config{TimestampedOutput: false}
+		if got := cfg.OutputFileName("TABLES"); got != "tables.sql" {
+			t.Fatalf("OutputFileName() = %q, want %q", got, "tables.sql")
+		}
+	})
+
+	t.Run("lowercase with timestamp", func(t *testing.T) {
+		cfg := Config{TimestampedOutput: true, RunTimestamp: "20260312T190000Z"}
+		if got := cfg.OutputFileName("TABLES"); got != "tables_20260312T190000Z.sql" {
+			t.Fatalf("OutputFileName() = %q, want %q", got, "tables_20260312T190000Z.sql")
+		}
+	})
+}
+
+// TestWithTimestamp: Given base filename variations, when timestamp insertion
+// runs, then suffix placement should be deterministic.
+func TestWithTimestamp(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		fileName  string
+		enabled   bool
+		timestamp string
+		want      string
+	}{
+		{name: "disabled", fileName: "tables.sql", enabled: false, timestamp: "20260312T190000Z", want: "tables.sql"},
+		{name: "enabled with extension", fileName: "tables.sql", enabled: true, timestamp: "20260312T190000Z", want: "tables_20260312T190000Z.sql"},
+		{name: "enabled no extension", fileName: "tables", enabled: true, timestamp: "20260312T190000Z", want: "tables_20260312T190000Z"},
+	}
+
+	for _, testCase := range tests {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := withTimestamp(testCase.fileName, testCase.enabled, testCase.timestamp); got != testCase.want {
+				t.Fatalf("withTimestamp(%q, %t, %q) = %q, want %q", testCase.fileName, testCase.enabled, testCase.timestamp, got, testCase.want)
+			}
+		})
+	}
+}

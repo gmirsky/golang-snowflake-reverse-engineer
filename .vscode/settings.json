@@ -1,4 +1,9 @@
 {
     "snyk.advanced.autoSelectOrganization": true,
-    "snyk.advanced.organization": "4fa47eb9-fd92-4477-968c-88f62732f9b9"
+    "snyk.advanced.organization": "4fa47eb9-fd92-4477-968c-88f62732f9b9",
+    "gopls": {
+        "buildFlags": [
+            "-tags=integration"
+        ]
+    }
 }

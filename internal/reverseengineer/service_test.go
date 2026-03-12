@@ -2,6 +2,7 @@ package reverseengineer
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -20,39 +21,211 @@ type fakeRepo struct {
 	ddls                map[string]string
 	storageIntegrations []string
 	storageIntegRows    map[string][]Row
+	listViewsErr              error
+	fetchViewRowsErrByView    map[string]error
+	fetchDDLErrByQualified    map[string]error
+	listStorageIntegrationsErr error
+	descStorageErrByName      map[string]error
 }
 
 // ListViews: Given a fake repository, when view discovery runs, then fixture
 // view names are returned.
 func (f fakeRepo) ListViews(_ context.Context, _ string) ([]string, error) {
+	if f.listViewsErr != nil {
+		return nil, f.listViewsErr
+	}
 	return f.views, nil
 }
 
 // FetchViewRows: Given a view name, when row retrieval runs, then fixture rows
 // for that view are returned.
 func (f fakeRepo) FetchViewRows(_ context.Context, _ string, viewName string) ([]Row, error) {
+	if err, ok := f.fetchViewRowsErrByView[viewName]; ok {
+		return nil, err
+	}
 	return f.rows[viewName], nil
 }
 
 // FetchDDL: Given an inferred request, when DDL retrieval runs, then fixture
 // DDL text is returned by qualified object name.
 func (f fakeRepo) FetchDDL(_ context.Context, request DDLRequest) (string, error) {
+	if err, ok := f.fetchDDLErrByQualified[request.QualifiedName]; ok {
+		return "", err
+	}
 	return f.ddls[request.QualifiedName], nil
 }
 
 // ListStorageIntegrations: Given fake integration data, when listing runs,
 // then fixture integration names are returned.
 func (f fakeRepo) ListStorageIntegrations(_ context.Context) ([]string, error) {
+	if f.listStorageIntegrationsErr != nil {
+		return nil, f.listStorageIntegrationsErr
+	}
 	return f.storageIntegrations, nil
 }
 
 // DescStorageIntegration: Given an integration name, when DESC retrieval runs,
 // then configured fixture rows are returned.
 func (f fakeRepo) DescStorageIntegration(_ context.Context, name string) ([]Row, error) {
+	if err, ok := f.descStorageErrByName[name]; ok {
+		return nil, err
+	}
 	if f.storageIntegRows == nil {
 		return nil, nil
 	}
 	return f.storageIntegRows[name], nil
+}
+
+// TestServiceRunReturnsListViewsError: Given a repository list-views failure,
+// when Service.Run executes, then it should fail before processing work.
+func TestServiceRunReturnsListViewsError(t *testing.T) {
+	t.Parallel()
+
+	cfg := appconfig.Config{Database: "DEMO_DB", OutputDir: t.TempDir(), LogDir: t.TempDir(), MaxConnections: 2}
+	repo := fakeRepo{listViewsErr: errors.New("list failed")}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	_, err := service.Run(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "list information_schema views") {
+		t.Fatalf("expected list views error, got %v", err)
+	}
+}
+
+// TestServiceRunAggregatesViewFailure: Given one view fetch error, when
+// Service.Run executes, then other steps still complete and failure is returned.
+func TestServiceRunAggregatesViewFailure(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{Database: "DEMO_DB", OutputDir: outputDir, LogDir: outputDir, MaxConnections: 1}
+	repo := fakeRepo{
+		views:               []string{"BROKEN_VIEW"},
+		rows:                map[string][]Row{},
+		ddls:                map[string]string{},
+		storageIntegrations: []string{},
+		fetchViewRowsErrByView: map[string]error{
+			"BROKEN_VIEW": errors.New("view fetch failed"),
+		},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	summary, err := service.Run(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "BROKEN_VIEW") {
+		t.Fatalf("expected aggregated view error, got %v", err)
+	}
+	if summary.ViewsProcessed != 2 {
+		t.Fatalf("expected 2 processed views including storage step, got %d", summary.ViewsProcessed)
+	}
+	if summary.FilesWritten != 1 {
+		t.Fatalf("expected storage output file to still be written, got %d", summary.FilesWritten)
+	}
+}
+
+// TestServiceRunWritesFallbackWhenFetchDDLFails: Given inferable rows with
+// DDL fetch failures, when Service.Run executes, then fallback comments are written.
+func TestServiceRunWritesFallbackWhenFetchDDLFails(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{Database: "DEMO_DB", OutputDir: outputDir, LogDir: outputDir, MaxConnections: 1}
+	repo := fakeRepo{
+		views: []string{"TABLES"},
+		rows: map[string][]Row{
+			"TABLES": {
+				{"TABLE_CATALOG": "DEMO_DB", "TABLE_SCHEMA": "PUBLIC", "TABLE_NAME": "CUSTOMERS", "TABLE_TYPE": "BASE TABLE"},
+			},
+		},
+		ddls:                map[string]string{},
+		storageIntegrations: []string{},
+		fetchDDLErrByQualified: map[string]error{
+			`"DEMO_DB"."PUBLIC"."CUSTOMERS"`: errors.New("ddl fetch failed"),
+		},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	summary, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if summary.StatementsGenerated != 0 {
+		t.Fatalf("expected zero generated statements when DDL fetch fails, got %d", summary.StatementsGenerated)
+	}
+
+	content, readErr := os.ReadFile(filepath.Join(outputDir, "tables.sql"))
+	if readErr != nil {
+		t.Fatalf("ReadFile() error = %v", readErr)
+	}
+	if !strings.Contains(string(content), "Unable to generate DDL") {
+		t.Fatalf("expected fallback comment in tables.sql, got %s", string(content))
+	}
+}
+
+// TestServiceRunStorageListError: Given storage integration listing fails,
+// when Service.Run executes, then the error should be returned and no file written.
+func TestServiceRunStorageListError(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{Database: "DEMO_DB", OutputDir: outputDir, LogDir: outputDir, MaxConnections: 1}
+	repo := fakeRepo{
+		views:                      []string{},
+		rows:                       map[string][]Row{},
+		ddls:                       map[string]string{},
+		listStorageIntegrationsErr: errors.New("show integrations failed"),
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	summary, err := service.Run(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "STORAGE_INTEGRATIONS") {
+		t.Fatalf("expected storage integration error, got %v", err)
+	}
+	if summary.FilesWritten != 0 {
+		t.Fatalf("expected no files written, got %d", summary.FilesWritten)
+	}
+}
+
+// TestServiceRunStorageDescAndDDLReconstructionFallbacks: Given describe
+// failures and incomplete properties, when Service.Run executes, then both fallback comments are emitted.
+func TestServiceRunStorageDescAndDDLReconstructionFallbacks(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{Database: "DEMO_DB", OutputDir: outputDir, LogDir: outputDir, MaxConnections: 1}
+	repo := fakeRepo{
+		views:               []string{},
+		rows:                map[string][]Row{},
+		ddls:                map[string]string{},
+		storageIntegrations: []string{"BROKEN_DESC", "MISSING_PROVIDER"},
+		descStorageErrByName: map[string]error{
+			"BROKEN_DESC": errors.New("desc failed"),
+		},
+		storageIntegRows: map[string][]Row{
+			"MISSING_PROVIDER": {
+				{"PROPERTY": "ENABLED", "PROPERTY_VALUE": "true"},
+			},
+		},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	summary, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if summary.StatementsGenerated != 0 {
+		t.Fatalf("expected no generated storage statements, got %d", summary.StatementsGenerated)
+	}
+
+	content, readErr := os.ReadFile(filepath.Join(outputDir, "storage_integrations.sql"))
+	if readErr != nil {
+		t.Fatalf("ReadFile() error = %v", readErr)
+	}
+	output := string(content)
+	if !strings.Contains(output, `Unable to describe storage integration "BROKEN_DESC"`) {
+		t.Fatalf("expected desc fallback comment, got %s", output)
+	}
+	if !strings.Contains(output, `Unable to reconstruct DDL for storage integration "MISSING_PROVIDER"`) {
+		t.Fatalf("expected reconstruction fallback comment, got %s", output)
+	}
 }
 
 // TestServiceRunWritesFiles: Given mixed view data, when Service.Run executes,
@@ -432,5 +605,70 @@ func TestServiceRunWritesStorageIntegrationsFileWhenEmpty(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "No data found") {
 		t.Fatalf("expected no-data comment in empty storage_integrations.sql, got %s", string(content))
+	}
+}
+
+// TestRenderCompactPackagesFallbackOnMissingFields: Given a PACKAGES row that
+// lacks PACKAGE_NAME or VERSION, when compact rendering runs directly, then
+// the fallback comment path should be activated for the incomplete row.
+func TestRenderCompactPackagesFallbackOnMissingFields(t *testing.T) {
+	t.Parallel()
+
+	rows := []Row{
+		{"LANGUAGE": "python"}, // missing PACKAGE_NAME and VERSION → fallback
+		{"PACKAGE_NAME": "abc", "VERSION": "1.0", "LANGUAGE": "python"},
+	}
+
+	output := renderCompactPackages(rows, 0, false)
+	if len(output) < 2 {
+		t.Fatalf("expected at least 2 output blocks, got %d", len(output))
+	}
+	if !strings.HasPrefix(output[0], "/* Unable to generate DDL") {
+		t.Fatalf("expected fallback comment for first row, got %q", output[0])
+	}
+}
+
+// TestServiceRunFallbackCommentOnUnrecognisedRow: Given a view row that
+// InferDDLRequest cannot recognise, when processView runs, then a fallback
+// comment should be written to the output file instead of silently skipping.
+func TestServiceRunFallbackCommentOnUnrecognisedRow(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	cfg := appconfig.Config{
+		Database:       "DEMO_DB",
+		OutputDir:      outputDir,
+		LogDir:         outputDir,
+		MaxConnections: 1,
+	}
+
+	repo := fakeRepo{
+		views: []string{"UNKNOWN_VIEW"},
+		rows: map[string][]Row{
+			// Row has no keys that InferDDLRequest can map to a DDL object.
+			"UNKNOWN_VIEW": {
+				{"SOME_UNRECOGNIZED_KEY": "value"},
+			},
+		},
+		ddls: map[string]string{},
+	}
+
+	service := NewService(repo, log.New(io.Discard, "", 0), cfg)
+	summary, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	// One file should have been written (the view output + storage integrations file).
+	if summary.FilesWritten < 1 {
+		t.Fatalf("expected at least 1 file written, got %d", summary.FilesWritten)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "unknown_view.sql"))
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if !strings.Contains(string(content), "Unable to generate DDL") {
+		t.Fatalf("expected fallback comment in output, got %s", string(content))
 	}
 }

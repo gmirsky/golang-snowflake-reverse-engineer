@@ -26,6 +26,16 @@ tasks:
     cmds:
       - go test ./...
 
+  test-integration:
+    desc: Run integration tests against a live Snowflake account (requires SNOWFLAKE_* env vars)
+    deps:
+      # Enforce exported-comment conventions before test execution.
+      - comment-check
+    cmds:
+      # Requires: SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_DATABASE.
+      # Optional: SNOWFLAKE_PRIVATE_KEY_PATH (defaults to keys/rsa_key.p8), SNOWFLAKE_PASSPHRASE.
+      - go test -tags integration -v -timeout 300s ./...
+
   comment-check:
     desc: Validate Given/When/Then style doc comments for exported functions
     cmds:

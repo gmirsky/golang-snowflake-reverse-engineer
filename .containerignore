@@ -1,0 +1,26 @@
+# VCS metadata
+.git
+.gitignore
+.vscode
+
+# Build and runtime artifacts
+bin
+dist
+logs
+output
+
+# Coverage and local reports
+coverage.out
+coverage.html
+
+# Local-only notes and docs not needed for image builds
+notes.txt
+README.md
+
+# Secrets and key material
+keys
+*.pem
+*.p8
+
+# OS/editor noise
+.DS_Store

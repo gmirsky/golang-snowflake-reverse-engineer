@@ -141,6 +141,29 @@ docker buildx build \
   .
 ```
 
+### Podman build
+
+Build using the repository `Containerfile` and `.containerignore`:
+
+```bash
+podman build \
+  -f Containerfile \
+  --ignorefile .containerignore \
+  -t snowflake-reverse-engineer:podman \
+  .
+```
+
+Build for a specific architecture:
+
+```bash
+podman build \
+  -f Containerfile \
+  --ignorefile .containerignore \
+  --arch amd64 \
+  -t snowflake-reverse-engineer:podman-amd64 \
+  .
+```
+
 ## Container run
 
 Mount directories for the private key, logs, and output files:
@@ -162,6 +185,26 @@ docker run --rm \
 ```
 
 If the private key is encrypted, add `--passphrase` to the container command.
+
+### Podman run
+
+Run with the same mounts and arguments using Podman:
+
+```bash
+podman run --rm \
+  -v "$PWD/keys:/keys:ro" \
+  -v "$PWD/output:/output" \
+  -v "$PWD/logs:/logs" \
+  snowflake-reverse-engineer:podman \
+  --user demo_user \
+  --account demo_account \
+  --warehouse demo_wh \
+  --database demo_db \
+  --output-dir /output \
+  --log-dir /logs \
+  --private-key /keys/rsa_key.p8 \
+  --max-connections 3
+```
 
 ## Notes on DDL generation
 

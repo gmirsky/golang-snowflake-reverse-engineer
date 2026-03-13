@@ -15,6 +15,97 @@ For each row in a view, the tool attempts to derive a Snowflake object identity 
 - An RSA private key file in a format supported by the Go SSH parser
 - Access to the target database and its `INFORMATION_SCHEMA`
 
+## Prerequisite tools
+
+Install these tools before running build and test workflows.
+
+### Required for core build and tests
+
+- Go (`1.26+`)
+  - Used by `go build`, `go test`, integration tests, and dependency graph generation.
+  - Quick check: `go version`
+- Bash (`4+` recommended)
+  - All maintenance scripts in `scripts/` are Bash scripts.
+  - Quick check: `bash --version`
+- bats-core
+  - Required for script test suites in `scripts/*.bats` and `task test-bats`.
+  - Quick check: `bats --version`
+- Task (go-task)
+  - Required if you use `task ...` workflows from `Taskfile.yml`.
+  - You can run equivalent raw commands manually if Task is not installed.
+  - Quick check: `task --version`
+- OpenSSL
+  - Required to generate and inspect RSA key-pair files for Snowflake auth.
+  - Quick check: `openssl version`
+- curl
+  - Required by `scripts/update_github_actions.sh` for GitHub API calls.
+  - Quick check: `curl --version`
+- Perl
+  - Required by in-place replacement logic in `scripts/rename_module_path.sh` and `scripts/update_chainguard_images.sh`.
+  - Quick check: `perl -v`
+
+### Required for specific workflows
+
+- Docker with Buildx
+  - Required for `task docker-build` and `scripts/update_chainguard_images.sh`.
+  - Quick checks: `docker --version` and `docker buildx version`
+- Podman
+  - Required for `task podman-build` and Podman container workflows.
+  - Quick check: `podman --version`
+- govulncheck
+  - Used for vulnerability scanning.
+  - `task vuln` installs it automatically if missing.
+
+### Platform notes
+
+- macOS (Homebrew)
+  - Typical install set: `brew install go task bats-core openssl curl perl`
+  - Docker and Podman are installed separately via their apps/package casks.
+- Ubuntu/Debian
+  - Typical install set: `sudo apt-get install golang-go bats curl perl openssl`
+  - Install Task from go-task docs or via package manager if available on your distro version.
+- Windows
+  - Recommended: use WSL2 Ubuntu for full Bash + bats compatibility.
+  - Native PowerShell/CMD execution is not the primary script target for this repository.
+
+### Tips and hints
+
+- Prefer Task targets for consistency: `task test`, `task test-bats`, `task test-integration`.
+- Integration tests need live Snowflake credentials (`SNOWFLAKE_*` env vars).
+- Set `GITHUB_TOKEN` before running actions checks/updates to reduce GitHub API rate-limit failures.
+- `rg` (ripgrep) is optional but recommended; scripts automatically use it when available for faster file discovery.
+- If `bats` is missing, run `task test` first for Go/unit checks, then add bats-core and run `task test-bats`.
+
+### Quick verification
+
+Run this once from your shell to verify required tools are available:
+
+```bash
+for cmd in go bash bats task openssl curl perl; do
+  if command -v "$cmd" >/dev/null 2>&1; then
+    printf 'ok: %s -> %s\n' "$cmd" "$(command -v "$cmd")"
+  else
+    printf 'missing: %s\n' "$cmd"
+  fi
+done
+```
+
+Check optional workflow tools:
+
+```bash
+for cmd in docker podman rg; do
+  if command -v "$cmd" >/dev/null 2>&1; then
+    printf 'optional ok: %s -> %s\n' "$cmd" "$(command -v "$cmd")"
+  else
+    printf 'optional missing: %s\n' "$cmd"
+  fi
+done
+
+if command -v docker >/dev/null 2>&1; then
+  docker buildx version || echo 'docker buildx plugin is missing'
+fi
+```
+
 ## CLI usage
 
 ```bash
@@ -111,6 +202,7 @@ Paste the output as the value inside the single quotes in the `ALTER USER` state
 ```bash
 go mod tidy
 go test ./...
+bats ./scripts/*.bats
 govulncheck ./...
 go build ./cmd/snowflake-reverse-engineer
 ```
@@ -137,6 +229,26 @@ Run tests:
 task test
 ```
 
+Run bats-core tests for maintenance scripts:
+
+```bash
+task test-bats
+```
+
+Current bats-core script test coverage:
+
+- `scripts/check_comment_style.bats` validates exported-comment style checks
+- `scripts/update_chainguard_images.bats` validates digest check/update behavior
+- `scripts/update_github_actions.bats` validates action version check/update behavior
+- `scripts/rename_module_path.bats` validates module path rewrite behavior
+- `scripts/generate_module_dependency_diagram.bats` validates diagram generation/update behavior
+
+Run integration tests against a live Snowflake account:
+
+```bash
+task test-integration
+```
+
 Run the CLI locally with arguments:
 
 ```bash
@@ -148,6 +260,8 @@ Other available tasks:
 ```bash
 task tidy
 task comment-check
+task test-bats
+task test-integration
 task vuln
 task image-check
 task image-update

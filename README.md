@@ -299,10 +299,10 @@ task image-check
 task image-update
 ```
 
-### Updating GitHub Actions versions in ci.yml
+### Updating GitHub Actions versions in workflow YAML files
 
 The repository includes `scripts/update_github_actions.sh` to check and update
-action versions referenced by `.github/workflows/ci.yml`.
+action versions referenced by YAML files in `.github/workflows/`.
 
 Check only (no file changes). Exits `1` when one or more actions are out of date:
 
@@ -377,7 +377,7 @@ locally and in CI. Use this section as a quick maintenance guide.
 
 `scripts/update_github_actions.sh`
 
-- Purpose: Checks or updates `uses:` references in `.github/workflows/ci.yml`
+- Purpose: Checks or updates `uses:` references in YAML files under `.github/workflows/`
   to latest stable GitHub release tags.
 - Modes:
   - `--check`: reports outdated action refs and exits non-zero when drift exists.

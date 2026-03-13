@@ -1,0 +1,46 @@
+name: Scripts Bats Coverage
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/**
+  pull_request:
+    paths:
+      - scripts/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-bats-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Verify every shell script has a bats test
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+          shopt -s nullglob
+
+          for script in scripts/*.sh; do
+            test_file="${script%.sh}.bats"
+            if [[ ! -f "$test_file" ]]; then
+              echo "missing bats test: $script -> $test_file"
+              missing=1
+            fi
+          done
+
+          if [[ "$missing" -ne 0 ]]; then
+            echo "status: failed"
+            exit 1
+          fi
+
+          echo "status: ok"

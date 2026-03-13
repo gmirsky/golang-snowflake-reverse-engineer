@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Check/update GitHub Action versions in a workflow file to latest stable release tags.
+# Check/update GitHub Action versions in workflow YAML files to latest stable release tags.
 # Supports lines like:
 #   uses: owner/repo@ref
 #   uses: owner/repo@ref # optional comment
@@ -12,7 +12,7 @@ set -euo pipefail
 
 # Resolve root from script location so execution is location-independent.
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORKFLOW_FILE="$ROOT_DIR/.github/workflows/ci.yml"
+WORKFLOW_DIR="$ROOT_DIR/.github/workflows"
 MODE="update"
 
 # Default to update mode; check mode is useful for CI policy enforcement.
@@ -25,8 +25,8 @@ else
   exit 2
 fi
 
-if [[ ! -f "$WORKFLOW_FILE" ]]; then
-  echo "error: workflow file not found: $WORKFLOW_FILE"
+if [[ ! -d "$WORKFLOW_DIR" ]]; then
+  echo "error: workflow directory not found: $WORKFLOW_DIR"
   exit 1
 fi
 
@@ -65,40 +65,60 @@ github_api_get_latest_tag() {
   printf '%s\n' "$tag"
 }
 
-# Build output in a temp file first, then swap into place atomically when needed.
-tmp_file="$(mktemp)"
-trap 'rm -f "$tmp_file"' EXIT
-
 # Counters provide user-facing summary and CI-friendly behavior.
 changed=0
 outdated=0
 checked=0
+workflow_files=()
 
-while IFS= read -r line; do
-  # Match "uses: owner/repo@ref" with optional trailing comment.
-  if [[ "$line" =~ ^([[:space:]]*uses:[[:space:]]*)([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)@([^[:space:]#]+)([[:space:]]*#.*)?$ ]]; then
-    prefix="${BASH_REMATCH[1]}"
-    repo="${BASH_REMATCH[2]}"
-    current_ref="${BASH_REMATCH[3]}"
+shopt -s nullglob
+for workflow_file in "$WORKFLOW_DIR"/*.yml "$WORKFLOW_DIR"/*.yaml; do
+  workflow_files+=("$workflow_file")
+done
+shopt -u nullglob
 
-    # Resolve latest stable tag per action repository.
-    latest_tag="$(github_api_get_latest_tag "$repo")"
-    checked=$((checked + 1))
+if [[ "${#workflow_files[@]}" -eq 0 ]]; then
+  echo "error: no workflow YAML files found in $WORKFLOW_DIR"
+  exit 1
+fi
 
-    if [[ "$current_ref" != "$latest_tag" ]]; then
-      outdated=$((outdated + 1))
-      echo "outdated: $repo ($current_ref -> $latest_tag)"
+for workflow_file in "${workflow_files[@]}"; do
+  # Build output in a temp file first, then swap into place atomically when needed.
+  tmp_file="$(mktemp)"
 
-      if [[ "$MODE" == "update" ]]; then
-        # Keep indentation/prefix; replace ref with latest tag and normalize comment.
-        line="${prefix}${repo}@${latest_tag} # ${latest_tag}"
-        changed=$((changed + 1))
+  while IFS= read -r line; do
+    # Match "uses: owner/repo@ref" with optional trailing comment.
+    if [[ "$line" =~ ^([[:space:]]*uses:[[:space:]]*)([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)@([^[:space:]#]+)([[:space:]]*#.*)?$ ]]; then
+      prefix="${BASH_REMATCH[1]}"
+      repo="${BASH_REMATCH[2]}"
+      current_ref="${BASH_REMATCH[3]}"
+
+      # Resolve latest stable tag per action repository.
+      latest_tag="$(github_api_get_latest_tag "$repo")"
+      checked=$((checked + 1))
+
+      if [[ "$current_ref" != "$latest_tag" ]]; then
+        outdated=$((outdated + 1))
+        echo "outdated: $(basename "$workflow_file"): $repo ($current_ref -> $latest_tag)"
+
+        if [[ "$MODE" == "update" ]]; then
+          # Keep indentation/prefix; replace ref with latest tag and normalize comment.
+          line="${prefix}${repo}@${latest_tag} # ${latest_tag}"
+          changed=$((changed + 1))
+        fi
       fi
     fi
-  fi
 
-  printf '%s\n' "$line" >> "$tmp_file"
-done < "$WORKFLOW_FILE"
+    printf '%s\n' "$line" >> "$tmp_file"
+  done < "$workflow_file"
+
+  if [[ "$MODE" == "update" && -f "$tmp_file" ]] && ! cmp -s "$tmp_file" "$workflow_file"; then
+    # Atomic replace avoids partially written files if the process is interrupted.
+    mv "$tmp_file" "$workflow_file"
+  else
+    rm -f "$tmp_file"
+  fi
+done
 
 # In check mode, return failure when drift exists so this can gate PRs.
 if [[ "$MODE" == "check" ]]; then
@@ -113,9 +133,6 @@ if [[ "$MODE" == "check" ]]; then
 fi
 
 if [[ "$changed" -gt 0 ]]; then
-  # Atomic replace avoids partially written files if the process is interrupted.
-  mv "$tmp_file" "$WORKFLOW_FILE"
-  trap - EXIT
   echo "updated: $changed action reference(s)"
   exit 0
 fi

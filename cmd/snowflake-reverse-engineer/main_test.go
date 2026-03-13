@@ -30,6 +30,8 @@ func TestRunExitCode2OnMissingRequiredFlags(t *testing.T) {
 	}
 }
 
+// TestRunExitCode1OnRuntimeFailure: Given valid parsed config, when app
+// execution returns an error, then run returns exit code 1.
 func TestRunExitCode1OnRuntimeFailure(t *testing.T) {
 	originalParseConfig := parseConfig
 	originalRunApp := runApp
@@ -50,6 +52,8 @@ func TestRunExitCode1OnRuntimeFailure(t *testing.T) {
 	}
 }
 
+// TestRunExitCode0OnSuccess: Given valid parsed config, when app execution
+// succeeds, then run returns exit code 0.
 func TestRunExitCode0OnSuccess(t *testing.T) {
 	originalParseConfig := parseConfig
 	originalRunApp := runApp
@@ -70,6 +74,8 @@ func TestRunExitCode0OnSuccess(t *testing.T) {
 	}
 }
 
+// TestMainPropagatesRunExitCode: Given main invokes run in a helper process,
+// when run exits with a flag-parse failure, then main propagates exit code 2.
 func TestMainPropagatesRunExitCode(t *testing.T) {
 	t.Parallel()
 
@@ -93,6 +99,8 @@ func TestMainPropagatesRunExitCode(t *testing.T) {
 	}
 }
 
+// TestMainProcessHelper: Given the helper-process env var is set, when the test
+// helper rewrites os.Args and calls main, then the process exits via main.
 func TestMainProcessHelper(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return

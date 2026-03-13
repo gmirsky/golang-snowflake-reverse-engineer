@@ -213,6 +213,89 @@ If `govulncheck` is not installed locally, install it with:
 go install golang.org/x/vuln/cmd/govulncheck@latest
 ```
 
+## Go code coverage
+
+Use Go's built-in coverage tooling to calculate statement coverage for this repository.
+
+### Repository-wide coverage (default test suite)
+
+Generate a coverage profile and print per-function plus total coverage:
+
+```bash
+task coverage
+```
+
+Equivalent raw commands:
+
+```bash
+go test ./... -coverprofile=coverage.out
+go tool cover -func=coverage.out
+```
+
+The final `total:` line is the repository-wide statement coverage percentage.
+
+### HTML coverage report
+
+Generate and open an interactive report:
+
+```bash
+task coverage-html
+```
+
+Equivalent raw commands:
+
+```bash
+go test ./... -coverprofile=coverage.out
+go tool cover -html=coverage.out
+```
+
+This opens a browser view with covered and uncovered lines highlighted.
+
+### Package-specific coverage
+
+Measure one package (example: `internal/snowflake`):
+
+```bash
+go test ./internal/snowflake -coverprofile=coverage-snowflake.out
+go tool cover -func=coverage-snowflake.out
+```
+
+Useful when you are improving tests for a specific package.
+
+### Cross-package instrumentation
+
+Include all packages in coverage instrumentation while running tests:
+
+```bash
+go test ./... -coverpkg=./... -coverprofile=coverage-allpkgs.out
+go tool cover -func=coverage-allpkgs.out
+```
+
+This is stricter than default coverage and can reveal gaps in code exercised indirectly.
+
+### Integration coverage (optional)
+
+If integration test prerequisites are configured (`SNOWFLAKE_*` env vars), run:
+
+```bash
+go test -tags integration -timeout 300s ./... -coverprofile=coverage-integration.out
+go tool cover -func=coverage-integration.out
+```
+
+Tip: Keep unit-test and integration coverage profiles separate so it is clear what each suite contributes.
+
+### Cleanup generated coverage files
+
+```bash
+task coverage-clean
+```
+
+Equivalent raw command:
+
+```bash
+rm -f coverage.out coverage-*.out
+```
+
 ## Taskfile usage
 
 This repository includes a `Taskfile.yml` for common development workflows.
@@ -263,6 +346,9 @@ task comment-check
 task test-bats
 task test-integration
 task vuln
+task coverage
+task coverage-html
+task coverage-clean
 task image-check
 task image-update
 task actions-check

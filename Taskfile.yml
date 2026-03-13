@@ -60,6 +60,23 @@ tasks:
         fi
         "$BIN/govulncheck" ./...
 
+  coverage:
+    desc: Run Go tests with coverage profile and print function/total coverage
+    cmds:
+      - go test ./... -coverprofile=coverage.out
+      - go tool cover -func=coverage.out
+
+  coverage-html:
+    desc: Generate Go coverage profile and open HTML report
+    cmds:
+      - go test ./... -coverprofile=coverage.out
+      - go tool cover -html=coverage.out
+
+  coverage-clean:
+    desc: Remove generated Go coverage profile files
+    cmds:
+      - rm -f coverage.out coverage-*.out
+
   image-check:
     desc: Optionally check whether pinned Chainguard image digests are up to date
     cmds:

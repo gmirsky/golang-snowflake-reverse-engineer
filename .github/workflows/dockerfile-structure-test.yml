@@ -34,7 +34,9 @@ jobs:
           sudo mv container-structure-test /usr/local/bin/container-structure-test
 
       - name: Build Docker image
-        run: docker build -t snowflake-reverse-engineer:cst .
+        env:
+          DOCKER_BUILDKIT: "1"
+        run: docker build --no-cache -t snowflake-reverse-engineer:cst .
 
       - name: Run Container Structure Test
         run: container-structure-test test --image snowflake-reverse-engineer:cst --config ./test/dockerfile-structure-test.yaml

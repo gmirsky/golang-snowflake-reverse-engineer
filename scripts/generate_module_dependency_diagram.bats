@@ -10,6 +10,10 @@
 # setup() restores it before every test so each README-modifying test starts
 # from the original state. teardown_file does a final restore.
 
+checksum_file() {
+  cksum "$1" | awk '{print $1":"$2}'
+}
+
 # ---------------------------------------------------------------------------
 # Suite-level fixture – runs once before all tests
 # ---------------------------------------------------------------------------
@@ -115,7 +119,14 @@ setup() {
 # ---------------------------------------------------------------------------
 
 @test "exits 1 with message when go is not in PATH" {
-  run env PATH="/usr/bin:/bin" bash "$SCRIPT" --print
+  local no_go_bin
+  no_go_bin="$(mktemp -d)"
+  ln -s "$(command -v bash)" "$no_go_bin/bash"
+
+  run /usr/bin/env PATH="$no_go_bin" bash "$SCRIPT" --print
+
+  rm -rf "$no_go_bin"
+
   [ "$status" -eq 1 ]
   [[ "$output" == *"go is required"* ]]
 }
@@ -181,9 +192,9 @@ setup() {
 }
 
 @test "--print does not modify README" {
-  readme_before="$(md5 -q "$README")"
+  readme_before="$(checksum_file "$README")"
   # Use the cached output; no need to re-run the script.
-  readme_after="$(md5 -q "$README")"
+  readme_after="$(checksum_file "$README")"
   [ "$readme_before" = "$readme_after" ]
 }
 

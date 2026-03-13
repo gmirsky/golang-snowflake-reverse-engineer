@@ -143,7 +143,13 @@ run_script() {
     "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
     "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 
-  run env PATH="/usr/bin:/bin" bash "$SCRIPT_UNDER_TEST" --check
+  local no_docker_bin
+  no_docker_bin="$(mktemp -d)"
+  ln -s "$(command -v bash)" "$no_docker_bin/bash"
+
+  run /usr/bin/env PATH="$no_docker_bin" bash "$SCRIPT_UNDER_TEST" --check
+
+  rm -rf "$no_docker_bin"
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"error: docker is required"* ]]

@@ -26,6 +26,11 @@ tasks:
     cmds:
       - go test ./...
 
+  test-bats:
+    desc: Run bats-core tests only
+    cmds:
+      - bats ./scripts/*.bats
+
   test-integration:
     desc: Run integration tests against a live Snowflake account (requires SNOWFLAKE_* env vars)
     deps:

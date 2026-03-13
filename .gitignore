@@ -29,7 +29,7 @@ output/
 *.p8
 
 # Compiled binary produced by `go build`
-snowflake-reverse-engineer
+/snowflake-reverse-engineer
 
 # Developer scratch notes
 notes.txt

@@ -1,0 +1,13 @@
+schemaVersion: 2.0.0
+
+# Validates runtime-image metadata and required binary presence for Dockerfile builds.
+metadataTest:
+  workdir: "/app"
+  user: "65532:65532"
+  entrypoint:
+    - "/usr/local/bin/snowflake-reverse-engineer"
+
+fileExistenceTests:
+  - name: "CLI binary exists"
+    path: "/usr/local/bin/snowflake-reverse-engineer"
+    shouldExist: true

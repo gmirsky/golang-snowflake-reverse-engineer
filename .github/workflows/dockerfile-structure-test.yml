@@ -1,0 +1,40 @@
+name: Dockerfile Structure Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+      - Containerfile
+      - test/dockerfile-structure-test.yaml
+  pull_request:
+    paths:
+      - Dockerfile
+      - Containerfile
+      - test/dockerfile-structure-test.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  structure-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install container-structure-test
+        run: |
+          curl -fsSL https://github.com/GoogleContainerTools/container-structure-test/releases/latest/download/container-structure-test-linux-amd64 \
+            -o container-structure-test
+          chmod +x container-structure-test
+          sudo mv container-structure-test /usr/local/bin/container-structure-test
+
+      - name: Build Docker image
+        run: docker build -t snowflake-reverse-engineer:cst .
+
+      - name: Run Container Structure Test
+        run: container-structure-test test --image snowflake-reverse-engineer:cst --config ./test/dockerfile-structure-test.yaml

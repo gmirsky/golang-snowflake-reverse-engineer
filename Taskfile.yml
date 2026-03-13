@@ -130,6 +130,12 @@ tasks:
     cmds:
       - docker build -t {{.BINARY_NAME}}:local .
 
+  docker-structure-test:
+    desc: Build Docker image and validate it with Google Container Structure Test
+    cmds:
+      - docker build -t {{.BINARY_NAME}}:cst .
+      - container-structure-test test --image {{.BINARY_NAME}}:cst --config ./test/dockerfile-structure-test.yaml
+
   podman-build:
     desc: Build container image with Podman
     cmds:

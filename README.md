@@ -49,6 +49,9 @@ Install these tools before running build and test workflows.
 - Docker with Buildx
   - Required for `task docker-build` and `scripts/update_chainguard_images.sh`.
   - Quick checks: `docker --version` and `docker buildx version`
+- Google Container Structure Test (`container-structure-test`)
+  - Required for `task docker-structure-test`.
+  - Quick check: `container-structure-test version`
 - Podman
   - Required for `task podman-build` and Podman container workflows.
   - Quick check: `podman --version`
@@ -357,9 +360,35 @@ task module-rename -- github.com/example/golang-snowflake-reverse-engineer
 task module-diagram-print
 task module-diagram-update
 task docker-build
+task docker-structure-test
 task podman-build
 task clean
 ```
+
+### Dockerfile structure test (Google Container Structure Test)
+
+The repository includes a Dockerfile-focused Container Structure Test config at
+`test/dockerfile-structure-test.yaml`.
+
+Run via Taskfile:
+
+```bash
+task docker-structure-test
+```
+
+Equivalent raw commands:
+
+```bash
+docker build -t snowflake-reverse-engineer:cst .
+container-structure-test test --image snowflake-reverse-engineer:cst --config ./test/dockerfile-structure-test.yaml
+```
+
+The test validates runtime image metadata (`WORKDIR`, `USER`, `ENTRYPOINT`) and
+checks that the CLI binary exists at `/usr/local/bin/snowflake-reverse-engineer`.
+
+The `.github/workflows/dockerfile-structure-test.yml` workflow runs these tests
+automatically on pushes and pull requests that touch `Dockerfile`,
+`Containerfile`, or `test/dockerfile-structure-test.yaml`.
 
 ### Updating pinned Chainguard image digests
 

@@ -33,3 +33,9 @@ output/
 
 # Developer scratch notes
 notes.txt
+
+# IDE and editor configuration files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

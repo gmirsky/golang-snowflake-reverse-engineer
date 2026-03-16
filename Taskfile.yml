@@ -51,6 +51,25 @@ tasks:
     cmds:
       - bash ./scripts/check_markdown_quality.sh
 
+  cloc:
+    desc: Count lines of code and write markdown/json reports
+    deps:
+      - cloc-check
+    cmds:
+      - cloc . --vcs=git --md --report-file=cloc-report.md
+      - cloc . --vcs=git --json --out=cloc-report.json
+
+  cloc-check:
+    desc: Verify cloc is installed
+    cmds:
+      - |
+        if ! command -v cloc >/dev/null 2>&1; then
+          echo "cloc is not installed."
+          echo "Install on macOS: brew install cloc"
+          echo "Install on Debian/Ubuntu: sudo apt-get install -y cloc"
+          exit 1
+        fi
+
   vuln:
     desc: Run Go vulnerability scan with govulncheck
     cmds:

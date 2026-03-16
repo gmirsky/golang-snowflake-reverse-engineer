@@ -86,6 +86,10 @@ Install these tools before running build and test workflows.
 - write-good
   - Required for `task markdown-check` prose quality checks.
   - Quick check: `write-good --version`
+- cloc
+  - Required for `task cloc` line-of-code reports.
+  - `task cloc-check` verifies availability and prints install hints when missing.
+  - Quick check: `cloc --version`
 
 #### Platform notes
 
@@ -426,6 +430,23 @@ Run markdown quality checks:
 task markdown-check
 ```
 
+Verify cloc is installed:
+
+```bash
+task cloc-check
+```
+
+Generate line-of-code reports:
+
+```bash
+task cloc
+```
+
+This writes:
+
+- `cloc-report.md` (markdown summary)
+- `cloc-report.json` (machine-readable report)
+
 Run integration tests against a live Snowflake account:
 
 ```bash
@@ -444,6 +465,8 @@ Other available tasks:
 task tidy
 task comment-check
 task markdown-check
+task cloc-check
+task cloc
 task test-bats
 task test-integration
 task vuln

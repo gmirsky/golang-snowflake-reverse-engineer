@@ -202,6 +202,14 @@ exclusions:
 - If the dummy test data moves to another file, update both ignore files in the same commit.
 - Do not add real credentials to tests or source files; these ignores are only for non-sensitive fixtures.
 
+### Contributor note
+
+When changing test fixtures that look like secrets (for example, dummy passwords, tokens, or keys), verify scanner behavior before merging:
+
+1. If the fixture file path changed, update both `.gitguardian.yaml` and `.cycode/config.yaml`.
+2. Keep the ignore rule path-scoped to the minimum required file.
+3. Prefer clearly fake placeholders over realistic credential formats whenever possible.
+
 ## Generating a key pair
 
 Snowflake key-pair authentication requires a PKCS#8 RSA private key and the corresponding public key registered on the Snowflake user.

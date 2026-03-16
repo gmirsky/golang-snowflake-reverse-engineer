@@ -16,16 +16,16 @@ import (
 // fakeRepo is a minimal in-memory implementation of Repository used to drive
 // deterministic service tests without opening real Snowflake connections.
 type fakeRepo struct {
-	views               []string
-	rows                map[string][]Row
-	ddls                map[string]string
-	storageIntegrations []string
-	storageIntegRows    map[string][]Row
-	listViewsErr              error
-	fetchViewRowsErrByView    map[string]error
-	fetchDDLErrByQualified    map[string]error
+	views                      []string
+	rows                       map[string][]Row
+	ddls                       map[string]string
+	storageIntegrations        []string
+	storageIntegRows           map[string][]Row
+	listViewsErr               error
+	fetchViewRowsErrByView     map[string]error
+	fetchDDLErrByQualified     map[string]error
 	listStorageIntegrationsErr error
-	descStorageErrByName      map[string]error
+	descStorageErrByName       map[string]error
 }
 
 // ListViews: Given a fake repository, when view discovery runs, then fixture
@@ -670,5 +670,87 @@ func TestServiceRunFallbackCommentOnUnrecognisedRow(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "Unable to generate DDL") {
 		t.Fatalf("expected fallback comment in output, got %s", string(content))
+	}
+}
+
+// TestSanitizeFileName: Given file names containing path-unsafe characters,
+// when sanitizeFileName runs, then each unsafe char should become an underscore.
+func TestSanitizeFileName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{in: "my/file.sql", want: "my_file.sql"},
+		{in: "a b:c\\\\d", want: "a_b_c_d"},
+		{in: "clean.sql", want: "clean.sql"},
+		{in: "a/b/c", want: "a_b_c"},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.in, func(t *testing.T) {
+			t.Parallel()
+			got := sanitizeFileName(tc.in)
+			if got != tc.want {
+				t.Fatalf("sanitizeFileName(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestRenderCompactPackagesMissingLanguage: Given a PACKAGES row without the
+// LANGUAGE field, when compact rendering runs, then the language field in the
+// emitted line should default to "unknown".
+func TestRenderCompactPackagesMissingLanguage(t *testing.T) {
+	t.Parallel()
+
+	rows := []Row{
+		{"PACKAGE_NAME": "mylib", "VERSION": "1.0"},
+	}
+
+	output := renderCompactPackages(rows, 0, false)
+	if len(output) != 1 {
+		t.Fatalf("expected 1 output block, got %d", len(output))
+	}
+	if !strings.Contains(output[0], "language 'unknown'") {
+		t.Fatalf("expected language 'unknown' in compact output, got %q", output[0])
+	}
+}
+
+// TestServiceRunVerboseLogsWriteFile: Given verbose mode enabled, when a view
+// is processed, then the logger should receive a wrote_file= log line.
+func TestServiceRunVerboseLogsWriteFile(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	var buf strings.Builder
+	logger := log.New(&buf, "", 0)
+
+	cfg := appconfig.Config{
+		Database:       "DEMO_DB",
+		OutputDir:      outputDir,
+		LogDir:         outputDir,
+		MaxConnections: 1,
+		Verbose:        true,
+	}
+
+	repo := fakeRepo{
+		views:               []string{"TABLES"},
+		rows:                map[string][]Row{"TABLES": {}},
+		ddls:                map[string]string{},
+		storageIntegrations: []string{},
+	}
+
+	service := NewService(repo, logger, cfg)
+	_, err := service.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "wrote_file=") {
+		t.Fatalf("expected wrote_file= in verbose log output, got:\n%s", logOutput)
 	}
 }

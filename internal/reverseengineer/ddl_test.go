@@ -847,3 +847,252 @@ func TestInferDDLRequestForTableTypeView(t *testing.T) {
 		t.Fatalf("expected VIEW for TABLE_TYPE=VIEW, got %s", request.ObjectType)
 	}
 }
+
+// TestRenderNoDataComment: Given a view name, when RenderNoDataComment runs,
+// then the output should be a SQL block comment containing the view name.
+func TestRenderNoDataComment(t *testing.T) {
+	t.Parallel()
+
+	got := RenderNoDataComment("MY_VIEW")
+	want := "/* No data found in the view MY_VIEW */\n"
+	if got != want {
+		t.Fatalf("RenderNoDataComment() = %q, want %q", got, want)
+	}
+}
+
+// TestInferDDLRequestForFunction: Given a FUNCTIONS row, when inference runs,
+// then a FUNCTION request with argument signature should be produced.
+func TestInferDDLRequestForFunction(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("DEMO_DB", "FUNCTIONS", Row{
+		"FUNCTION_CATALOG":   "DEMO_DB",
+		"FUNCTION_SCHEMA":    "PUBLIC",
+		"FUNCTION_NAME":      "CALC_TAX",
+		"ARGUMENT_SIGNATURE": "(NUMBER)",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred for FUNCTION row")
+	}
+	if request.ObjectType != "FUNCTION" {
+		t.Fatalf("expected FUNCTION, got %s", request.ObjectType)
+	}
+	if request.QualifiedName != `"DEMO_DB"."PUBLIC"."CALC_TAX"(NUMBER)` {
+		t.Fatalf("unexpected qualified name %q", request.QualifiedName)
+	}
+}
+
+// TestInferDDLRequestForPipe: Given a PIPES row, when inference runs via
+// the prefix loop, then a PIPE DDL request should be produced.
+func TestInferDDLRequestForPipe(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("DEMO_DB", "PIPES", Row{
+		"PIPE_CATALOG": "DEMO_DB",
+		"PIPE_SCHEMA":  "PUBLIC",
+		"PIPE_NAME":    "MY_PIPE",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred for PIPE row")
+	}
+	if request.ObjectType != "PIPE" {
+		t.Fatalf("expected PIPE, got %s", request.ObjectType)
+	}
+	if request.QualifiedName != `"DEMO_DB"."PUBLIC"."MY_PIPE"` {
+		t.Fatalf("unexpected qualified name %q", request.QualifiedName)
+	}
+}
+
+// TestInferDDLRequestForStream: Given a STREAMS row, when inference runs,
+// then a STREAM DDL request should be produced.
+func TestInferDDLRequestForStream(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("DEMO_DB", "STREAMS", Row{
+		"STREAM_CATALOG": "DEMO_DB",
+		"STREAM_SCHEMA":  "PUBLIC",
+		"STREAM_NAME":    "MY_STREAM",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred for STREAM row")
+	}
+	if request.ObjectType != "STREAM" {
+		t.Fatalf("expected STREAM, got %s", request.ObjectType)
+	}
+}
+
+// TestInferDDLRequestForSequence: Given a SEQUENCES row, when inference runs,
+// then a SEQUENCE DDL request should be produced.
+func TestInferDDLRequestForSequence(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("DEMO_DB", "SEQUENCES", Row{
+		"SEQUENCE_CATALOG": "DEMO_DB",
+		"SEQUENCE_SCHEMA":  "PUBLIC",
+		"SEQUENCE_NAME":    "MY_SEQ",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred for SEQUENCE row")
+	}
+	if request.ObjectType != "SEQUENCE" {
+		t.Fatalf("expected SEQUENCE, got %s", request.ObjectType)
+	}
+}
+
+// TestInferDDLRequestForFileFormat: Given a FILE_FORMATS row, when inference
+// runs, then a FILE FORMAT DDL request should be produced with the
+// underscore-to-space normalised object type.
+func TestInferDDLRequestForFileFormat(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("DEMO_DB", "FILE_FORMATS", Row{
+		"FILE_FORMAT_CATALOG": "DEMO_DB",
+		"FILE_FORMAT_SCHEMA":  "PUBLIC",
+		"FILE_FORMAT_NAME":    "MY_CSV_FORMAT",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred for FILE_FORMAT row")
+	}
+	if request.ObjectType != "FILE FORMAT" {
+		t.Fatalf("expected \"FILE FORMAT\", got %q", request.ObjectType)
+	}
+	if request.QualifiedName != `"DEMO_DB"."PUBLIC"."MY_CSV_FORMAT"` {
+		t.Fatalf("unexpected qualified name %q", request.QualifiedName)
+	}
+}
+
+// TestInferDDLRequestForDynamicTable: Given a DYNAMIC_TABLES row, when
+// inference runs, then a DYNAMIC TABLE DDL request should be produced.
+func TestInferDDLRequestForDynamicTable(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("DEMO_DB", "DYNAMIC_TABLES", Row{
+		"DYNAMIC_TABLE_CATALOG": "DEMO_DB",
+		"DYNAMIC_TABLE_SCHEMA":  "PUBLIC",
+		"DYNAMIC_TABLE_NAME":    "MY_DT",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred for DYNAMIC_TABLE row")
+	}
+	if request.ObjectType != "DYNAMIC TABLE" {
+		t.Fatalf("expected \"DYNAMIC TABLE\", got %q", request.ObjectType)
+	}
+}
+
+// TestInferDDLRequestForMaterializedViews: Given a MATERIALIZED_VIEWS row,
+// when inference runs, then ObjectType should be "VIEW" via the dedicated
+// EqualFold("MATERIALIZED_VIEWS") branch.
+func TestInferDDLRequestForMaterializedViews(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("DEMO_DB", "MATERIALIZED_VIEWS", Row{
+		"TABLE_CATALOG": "DEMO_DB",
+		"TABLE_SCHEMA":  "PUBLIC",
+		"TABLE_NAME":    "MV_SALES",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred")
+	}
+	if request.ObjectType != "VIEW" {
+		t.Fatalf("expected VIEW for MATERIALIZED_VIEWS, got %s", request.ObjectType)
+	}
+	if request.QualifiedName != `"DEMO_DB"."PUBLIC"."MV_SALES"` {
+		t.Fatalf("unexpected qualified name %q", request.QualifiedName)
+	}
+}
+
+// TestInferDDLRequestForCatalogSchema: Given a row with both CATALOG_NAME and
+// SCHEMA_NAME, when inference runs, then a SCHEMA request using the catalog
+// qualifier should be produced.
+func TestInferDDLRequestForCatalogSchema(t *testing.T) {
+	t.Parallel()
+
+	request, ok := InferDDLRequest("", "SCHEMATA", Row{
+		"CATALOG_NAME": "DEMO_DB",
+		"SCHEMA_NAME":  "PUBLIC",
+	})
+	if !ok {
+		t.Fatal("expected request to be inferred")
+	}
+	if request.ObjectType != "SCHEMA" {
+		t.Fatalf("expected SCHEMA, got %s", request.ObjectType)
+	}
+	if request.QualifiedName != `"DEMO_DB"."PUBLIC"` {
+		t.Fatalf("unexpected qualified name %q", request.QualifiedName)
+	}
+}
+
+// TestNormalizeObjectToken: Given various token strings, when normalizeObjectToken
+// runs, then underscores become spaces and the result is uppercased.
+func TestNormalizeObjectToken(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{in: "file_format", want: "FILE FORMAT"},
+		{in: "TABLE", want: "TABLE"},
+		{in: "dynamic_table", want: "DYNAMIC TABLE"},
+		{in: "  ", want: ""},
+		{in: "", want: ""},
+		{in: "schema", want: "SCHEMA"},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.in, func(t *testing.T) {
+			t.Parallel()
+			got := normalizeObjectToken(tc.in)
+			if got != tc.want {
+				t.Fatalf("normalizeObjectToken(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestQuoteLiteralEscapesSingleQuote: Given a string containing a single
+// quote, when quoteLiteral runs, then the embedded quote must be doubled.
+func TestQuoteLiteralEscapesSingleQuote(t *testing.T) {
+	t.Parallel()
+
+	got := quoteLiteral("it's fine")
+	want := `'it''s fine'`
+	if got != want {
+		t.Fatalf("quoteLiteral(\"it's fine\") = %q, want %q", got, want)
+	}
+}
+
+// TestQuoteIdentifierEscapesDoubleQuote: Given a string containing a double
+// quote, when quoteIdentifier runs, then the embedded quote must be doubled.
+func TestQuoteIdentifierEscapesDoubleQuote(t *testing.T) {
+	t.Parallel()
+
+	got := quoteIdentifier(`MY"TABLE`)
+	want := `"MY""TABLE"`
+	if got != want {
+		t.Fatalf(`quoteIdentifier("MY\"TABLE") = %q, want %q`, got, want)
+	}
+}
+
+// TestGetStringMissingKey: Given a row that does not contain a key, when
+// getString runs, then it should return ("", false).
+func TestGetStringMissingKey(t *testing.T) {
+	t.Parallel()
+
+	_, ok := getString(Row{}, "ABSENT_KEY")
+	if ok {
+		t.Fatal("expected getString to return false for a missing key")
+	}
+}
+
+// TestGetStringBlankValue: Given a row with a whitespace-only string value,
+// when getString runs, then it should return ("", false).
+func TestGetStringBlankValue(t *testing.T) {
+	t.Parallel()
+
+	_, ok := getString(Row{"KEY": "   "}, "KEY")
+	if ok {
+		t.Fatal("expected getString to return false for a blank string value")
+	}
+}

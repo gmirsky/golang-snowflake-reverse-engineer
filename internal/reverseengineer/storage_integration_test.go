@@ -210,3 +210,85 @@ func TestStorageLocationsToTuple(t *testing.T) {
 		}
 	}
 }
+
+// TestBuildStorageIntegrationDDL_S3GOV: Given S3GOV DESC rows, when DDL
+// building runs, then STORAGE_PROVIDER should be 'S3GOV' and ARN emitted.
+func TestBuildStorageIntegrationDDL_S3GOV(t *testing.T) {
+	t.Parallel()
+
+	rows := []Row{
+		{"PROPERTY": "STORAGE_PROVIDER", "PROPERTY_VALUE": "S3GOV"},
+		{"PROPERTY": "ENABLED", "PROPERTY_VALUE": "true"},
+		{"PROPERTY": "STORAGE_AWS_ROLE_ARN", "PROPERTY_VALUE": "arn:aws-us-gov:iam::123:role/my-role"},
+		{"PROPERTY": "STORAGE_ALLOWED_LOCATIONS", "PROPERTY_VALUE": "s3://gov-bucket/"},
+	}
+
+	ddl, ok := BuildStorageIntegrationDDL("GOV_INTEGRATION", rows)
+	if !ok {
+		t.Fatal("expected DDL to be built successfully for S3GOV")
+	}
+
+	for _, want := range []string{
+		"STORAGE_PROVIDER = 'S3GOV'",
+		"STORAGE_AWS_ROLE_ARN = 'arn:aws-us-gov:iam::123:role/my-role'",
+		"STORAGE_ALLOWED_LOCATIONS = ('s3://gov-bucket/')",
+	} {
+		if !strings.Contains(ddl, want) {
+			t.Errorf("expected S3GOV DDL to contain %q, got:\n%s", want, ddl)
+		}
+	}
+}
+
+// TestBuildStorageIntegrationDDL_S3CHINA: Given S3CHINA DESC rows, when DDL
+// building runs, then STORAGE_PROVIDER should be 'S3CHINA'.
+func TestBuildStorageIntegrationDDL_S3CHINA(t *testing.T) {
+	t.Parallel()
+
+	rows := []Row{
+		{"PROPERTY": "STORAGE_PROVIDER", "PROPERTY_VALUE": "S3CHINA"},
+		{"PROPERTY": "ENABLED", "PROPERTY_VALUE": "true"},
+		{"PROPERTY": "STORAGE_AWS_ROLE_ARN", "PROPERTY_VALUE": "arn:aws-cn:iam::456:role/china-role"},
+		{"PROPERTY": "STORAGE_ALLOWED_LOCATIONS", "PROPERTY_VALUE": "s3://cn-bucket/"},
+	}
+
+	ddl, ok := BuildStorageIntegrationDDL("CHINA_INTEGRATION", rows)
+	if !ok {
+		t.Fatal("expected DDL to be built successfully for S3CHINA")
+	}
+
+	if !strings.Contains(ddl, "STORAGE_PROVIDER = 'S3CHINA'") {
+		t.Errorf("expected STORAGE_PROVIDER = 'S3CHINA' in DDL, got:\n%s", ddl)
+	}
+}
+
+// TestStorageLocationsToTupleWhitespaceOnly: Given a comma-separated string
+// where every part is blank, when storageLocationsToTuple runs, then blanks
+// should be silently skipped and an empty string returned.
+func TestStorageLocationsToTupleWhitespaceOnly(t *testing.T) {
+	t.Parallel()
+
+	got := storageLocationsToTuple("  ,  ,  ")
+	if got != "" {
+		t.Fatalf("expected empty string for all-whitespace input, got %q", got)
+	}
+}
+
+// TestDescRowsToMapSkipsMissingPropertyKey: Given a row that has no PROPERTY
+// key, when descRowsToMap runs, then that row should be silently skipped and
+// not cause a panic or corrupt the result map.
+func TestDescRowsToMapSkipsMissingPropertyKey(t *testing.T) {
+	t.Parallel()
+
+	rows := []Row{
+		{"PROPERTY_VALUE": "orphan"}, // no PROPERTY key — must be skipped
+		{"PROPERTY": "ENABLED", "PROPERTY_VALUE": "true"},
+	}
+
+	props := descRowsToMap(rows)
+	if _, found := props[""]; found {
+		t.Fatal("expected orphan row to be skipped, but empty key was added")
+	}
+	if props["ENABLED"] != "true" {
+		t.Fatalf("expected ENABLED=true, got %q", props["ENABLED"])
+	}
+}

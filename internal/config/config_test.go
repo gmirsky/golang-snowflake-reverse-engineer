@@ -269,3 +269,177 @@ func TestWithTimestamp(t *testing.T) {
 		})
 	}
 }
+
+// TestParseVerboseFlag: Given the --verbose flag, when Parse runs, then
+// verbose mode should be enabled in the returned config.
+func TestParseVerboseFlag(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Parse([]string{
+		"--user", "demo_user",
+		"--account", "demo_account",
+		"--warehouse", "demo_wh",
+		"--database", "demo_db",
+		"--output-dir", "./output",
+		"--log-dir", "./logs",
+		"--private-key", "./keys/demo.p8",
+		"--verbose",
+	})
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	if !cfg.Verbose {
+		t.Fatal("expected verbose to be true when --verbose flag is passed")
+	}
+}
+
+// TestParseTimestampedOutputFlag: Given the --timestamped-output flag, when
+// Parse runs, then timestamped output should be enabled.
+func TestParseTimestampedOutputFlag(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Parse([]string{
+		"--user", "demo_user",
+		"--account", "demo_account",
+		"--warehouse", "demo_wh",
+		"--database", "demo_db",
+		"--output-dir", "./output",
+		"--log-dir", "./logs",
+		"--private-key", "./keys/demo.p8",
+		"--timestamped-output",
+	})
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	if !cfg.TimestampedOutput {
+		t.Fatal("expected timestamped-output to be true when --timestamped-output flag is passed")
+	}
+}
+
+// TestParsePassphraseFlag: Given the --passphrase flag, when Parse runs, then
+// the passphrase value should be preserved exactly.
+func TestParsePassphraseFlag(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Parse([]string{
+		"--user", "demo_user",
+		"--account", "demo_account",
+		"--warehouse", "demo_wh",
+		"--database", "demo_db",
+		"--output-dir", "./output",
+		"--log-dir", "./logs",
+		"--private-key", "./keys/demo.p8",
+		"--passphrase", "s3cr3t",
+	})
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	if cfg.Passphrase != "s3cr3t" {
+		t.Fatalf("expected passphrase %q, got %q", "s3cr3t", cfg.Passphrase)
+	}
+}
+
+// TestParseUppercasesIdentifiers: Given lowercase flag values, when Parse
+// runs, then user, account, warehouse, and database should be uppercased.
+func TestParseUppercasesIdentifiers(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Parse([]string{
+		"--user", "myuser",
+		"--account", "myaccount",
+		"--warehouse", "mywh",
+		"--database", "mydb",
+		"--output-dir", "./output",
+		"--log-dir", "./logs",
+		"--private-key", "./keys/demo.p8",
+	})
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	if cfg.User != "MYUSER" {
+		t.Fatalf("expected User %q, got %q", "MYUSER", cfg.User)
+	}
+	if cfg.Account != "MYACCOUNT" {
+		t.Fatalf("expected Account %q, got %q", "MYACCOUNT", cfg.Account)
+	}
+	if cfg.Warehouse != "MYWH" {
+		t.Fatalf("expected Warehouse %q, got %q", "MYWH", cfg.Warehouse)
+	}
+	if cfg.Database != "MYDB" {
+		t.Fatalf("expected Database %q, got %q", "MYDB", cfg.Database)
+	}
+}
+
+// TestValidateRejectsTooFewConnections: Given MaxConnections below the minimum,
+// when Validate runs, then it must reject the config.
+func TestValidateRejectsTooFewConnections(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{
+		User:           "u",
+		Account:        "a",
+		Warehouse:      "w",
+		Database:       "d",
+		OutputDir:      "./output",
+		LogDir:         "./logs",
+		PrivateKeyPath: "./key.p8",
+		MaxConnections: 0,
+	}
+
+	err := cfg.Validate()
+
+	if err == nil || !strings.Contains(err.Error(), "max-connections") {
+		t.Fatalf("expected max-connections validation error for value 0, got %v", err)
+	}
+}
+
+// TestValidateRejectsDotOutputDir: Given "." as the output directory, when
+// Validate runs, then it must reject degenerate path to prevent accidental writes.
+func TestValidateRejectsDotOutputDir(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{
+		User:           "u",
+		Account:        "a",
+		Warehouse:      "w",
+		Database:       "d",
+		OutputDir:      ".",
+		LogDir:         "./logs",
+		PrivateKeyPath: "./key.p8",
+		MaxConnections: 3,
+	}
+
+	err := cfg.Validate()
+
+	if err == nil || !strings.Contains(err.Error(), "explicit paths") {
+		t.Fatalf("expected explicit-paths validation error for OutputDir='.', got %v", err)
+	}
+}
+
+// TestRedactedParametersNullPassphrase: Given an empty passphrase, when
+// RedactedParameters runs, then the passphrase field should read "null".
+func TestRedactedParametersNullPassphrase(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{
+		User:           "u",
+		Account:        "a",
+		Warehouse:      "w",
+		Database:       "d",
+		OutputDir:      "./output",
+		LogDir:         "./logs",
+		PrivateKeyPath: "./key.p8",
+		MaxConnections: 3,
+		Passphrase:     "",
+	}
+
+	params := cfg.RedactedParameters()
+
+	if params["passphrase"] != "null" {
+		t.Fatalf("expected passphrase to be \"null\" when empty, got %q", params["passphrase"])
+	}
+}

@@ -1,0 +1,4 @@
+exclusions:
+  secret:
+    paths:
+      - internal/config/config_test.go

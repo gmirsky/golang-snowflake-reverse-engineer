@@ -156,6 +156,52 @@ go run ./cmd/snowflake-reverse-engineer \
   - the number of SQL statements generated per view
   - a run summary
 
+## Security scanner ignore files
+
+This repository uses scanner-specific ignore files to suppress known test-only dummy secrets.
+
+### GitGuardian (`ggshield`)
+
+- File: `.gitguardian.yaml`
+- Scope: local repo scan behavior for GitGuardian CLI (`ggshield`)
+- Current ignore:
+  - `secret.ignored_paths` includes `internal/config/config_test.go`
+
+Current file content:
+
+```yaml
+version: 2
+secret:
+  ignored_paths:
+    - internal/config/config_test.go
+```
+
+### Cycode CLI
+
+- File: `.cycode/config.yaml`
+- Scope: local repo scan behavior for Cycode CLI
+- Current ignore:
+  - `exclusions.secret.paths` includes `internal/config/config_test.go`
+
+Current file content:
+
+```yaml
+exclusions:
+  secret:
+    paths:
+      - internal/config/config_test.go
+```
+
+### Why this exists
+
+`internal/config/config_test.go` contains a dummy passphrase test value (`"s3cr3t"`) used in unit tests. These ignore entries prevent local secret scanners from flagging that known non-production test fixture.
+
+### Maintenance guidance
+
+- Keep ignores as narrow as possible (prefer file/path-specific rules over global value ignores).
+- If the dummy test data moves to another file, update both ignore files in the same commit.
+- Do not add real credentials to tests or source files; these ignores are only for non-sensitive fixtures.
+
 ## Generating a key pair
 
 Snowflake key-pair authentication requires a PKCS#8 RSA private key and the corresponding public key registered on the Snowflake user.

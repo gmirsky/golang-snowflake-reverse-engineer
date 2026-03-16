@@ -26,11 +26,27 @@ jobs:
           go-version-file: go.mod
           cache: 'true'
 
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+
+      - name: Install markdown quality tools
+        run: |
+          npm install --global markdownlint-cli write-good
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://github.com/lycheeverse/lychee/releases/download/lychee-v0.23.0/lychee-x86_64-unknown-linux-gnu.tar.gz \
+            | tar -xz -C "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Check comment style
         run: bash ./scripts/check_comment_style.sh
+
+      - name: Check markdown quality
+        run: bash ./scripts/check_markdown_quality.sh
 
       - name: Run tests
         run: go test ./...

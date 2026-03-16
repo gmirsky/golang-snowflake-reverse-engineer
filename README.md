@@ -8,18 +8,37 @@ For each row in a view, the tool attempts to derive a Snowflake object identity 
 /* No data found in the view <view name> */
 ```
 
-## Requirements
+## Guide map
+
+- Setup and prerequisites
+  - Requirements, toolchain, platform notes
+- Running the tool
+  - CLI usage, flags, and output behavior
+- Security scanner configuration
+  - GitGuardian and Cycode ignore files
+- Credentials and keys
+  - Snowflake key generation and registration
+- Development workflow
+  - Local development, coverage, Taskfile workflows, script maintenance
+- Container usage
+  - Docker/Podman build and run examples
+- Reference
+  - DDL generation notes and dependency diagrams
+
+## Setup and prerequisites
+
+### Requirements
 
 - Go `1.26+` for native builds
 - A Snowflake user configured for key-pair authentication
 - An RSA private key file in a format supported by the Go SSH parser
 - Access to the target database and its `INFORMATION_SCHEMA`
 
-## Prerequisite tools
+### Prerequisite tools
 
 Install these tools before running build and test workflows.
 
-### Required for core build and tests
+#### Required for core build and tests
 
 - Go (`1.26+`)
   - Used by `go build`, `go test`, integration tests, and dependency graph generation.
@@ -44,7 +63,7 @@ Install these tools before running build and test workflows.
   - Required by in-place replacement logic in `scripts/rename_module_path.sh` and `scripts/update_chainguard_images.sh`.
   - Quick check: `perl -v`
 
-### Required for specific workflows
+#### Required for specific workflows
 
 - Docker with Buildx
   - Required for `task docker-build` and `scripts/update_chainguard_images.sh`.
@@ -58,8 +77,17 @@ Install these tools before running build and test workflows.
 - govulncheck
   - Used for vulnerability scanning.
   - `task vuln` installs it automatically if missing.
+- markdownlint
+  - Required for `task markdown-check` Markdown style validation.
+  - Quick check: `markdownlint --version`
+- lychee
+  - Required for `task markdown-check` link validation.
+  - Quick check: `lychee --version`
+- write-good
+  - Required for `task markdown-check` prose quality checks.
+  - Quick check: `write-good --version`
 
-### Platform notes
+#### Platform notes
 
 - macOS (Homebrew)
   - Typical install set: `brew install go task bats-core openssl curl perl`
@@ -71,7 +99,7 @@ Install these tools before running build and test workflows.
   - Recommended: use WSL2 Ubuntu for full Bash + bats compatibility.
   - Native PowerShell/CMD execution is not the primary script target for this repository.
 
-### Tips and hints
+#### Tips and hints
 
 - Prefer Task targets for consistency: `task test`, `task test-bats`, `task test-integration`.
 - Integration tests need live Snowflake credentials (`SNOWFLAKE_*` env vars).
@@ -79,7 +107,7 @@ Install these tools before running build and test workflows.
 - `rg` (ripgrep) is optional but recommended; scripts automatically use it when available for faster file discovery.
 - If `bats` is missing, run `task test` first for Go/unit checks, then add bats-core and run `task test-bats`.
 
-### Quick verification
+#### Quick verification
 
 Run this once from your shell to verify required tools are available:
 
@@ -109,7 +137,9 @@ if command -v docker >/dev/null 2>&1; then
 fi
 ```
 
-## CLI usage
+## Running the tool
+
+### CLI usage
 
 ```bash
 go run ./cmd/snowflake-reverse-engineer \
@@ -142,7 +172,7 @@ go run ./cmd/snowflake-reverse-engineer \
 - `--timestamped-output`: Optional. Appends the run timestamp to output and log file names
 - `--verbose`: Optional. Enables extra runtime logging
 
-## Output behavior
+### Output behavior
 
 - One file is generated for each view in `<database>.INFORMATION_SCHEMA`
 - Processing is concurrent, limited by `--max-connections`
@@ -156,11 +186,13 @@ go run ./cmd/snowflake-reverse-engineer \
   - the number of SQL statements generated per view
   - a run summary
 
-## Security scanner ignore files
+## Security scanner configuration
+
+### Security scanner ignore files
 
 This repository uses scanner-specific ignore files to suppress known test-only dummy secrets.
 
-### GitGuardian (`ggshield`)
+#### GitGuardian (`ggshield`)
 
 - File: `.gitguardian.yaml`
 - Scope: local repo scan behavior for GitGuardian CLI (`ggshield`)
@@ -176,7 +208,7 @@ secret:
     - internal/config/config_test.go
 ```
 
-### Cycode CLI
+#### Cycode CLI
 
 - File: `.cycode/config.yaml`
 - Scope: local repo scan behavior for Cycode CLI
@@ -192,17 +224,17 @@ exclusions:
       - internal/config/config_test.go
 ```
 
-### Why this exists
+#### Why this exists
 
 `internal/config/config_test.go` contains a dummy passphrase test value (`"s3cr3t"`) used in unit tests. These ignore entries prevent local secret scanners from flagging that known non-production test fixture.
 
-### Maintenance guidance
+#### Maintenance guidance
 
 - Keep ignores as narrow as possible (prefer file/path-specific rules over global value ignores).
 - If the dummy test data moves to another file, update both ignore files in the same commit.
 - Do not add real credentials to tests or source files; these ignores are only for non-sensitive fixtures.
 
-### Contributor note
+#### Contributor note
 
 When changing test fixtures that look like secrets (for example, dummy passwords, tokens, or keys), verify scanner behavior before merging:
 
@@ -210,11 +242,13 @@ When changing test fixtures that look like secrets (for example, dummy passwords
 2. Keep the ignore rule path-scoped to the minimum required file.
 3. Prefer clearly fake placeholders over realistic credential formats whenever possible.
 
-## Generating a key pair
+## Credentials and keys
+
+### Generating a key pair
 
 Snowflake key-pair authentication requires a PKCS#8 RSA private key and the corresponding public key registered on the Snowflake user.
 
-### Generate an unencrypted private key
+#### Generate an unencrypted private key
 
 ```bash
 mkdir -p keys
@@ -222,7 +256,7 @@ openssl genrsa 4096 | openssl pkcs8 -topk8 -inform PEM -out keys/rsa_key.p8 -noc
 chmod 600 keys/rsa_key.p8
 ```
 
-### Generate a passphrase-protected private key
+#### Generate a passphrase-protected private key
 
 ```bash
 mkdir -p keys
@@ -232,13 +266,13 @@ chmod 600 keys/rsa_key.p8
 
 OpenSSL will prompt for a passphrase. Pass the same value to the tool via `--passphrase` at runtime.
 
-### Derive the public key
+#### Derive the public key
 
 ```bash
 openssl rsa -in keys/rsa_key.p8 -pubout -out keys/rsa_key.pub
 ```
 
-### Register the public key with Snowflake
+#### Register the public key with Snowflake
 
 Strip the PEM header/footer lines, then set the key on your Snowflake user:
 
@@ -254,7 +288,9 @@ grep -v "^-----" keys/rsa_key.pub | tr -d '\n'
 
 Paste the output as the value inside the single quotes in the `ALTER USER` statement.
 
-## Native development
+## Development workflow
+
+### Native development
 
 ```bash
 go mod tidy
@@ -270,11 +306,11 @@ If `govulncheck` is not installed locally, install it with:
 go install golang.org/x/vuln/cmd/govulncheck@latest
 ```
 
-## Go code coverage
+### Go code coverage
 
 Use Go's built-in coverage tooling to calculate statement coverage for this repository.
 
-### Repository-wide coverage (default test suite)
+#### Repository-wide coverage (default test suite)
 
 Generate a coverage profile and print per-function plus total coverage:
 
@@ -291,7 +327,7 @@ go tool cover -func=coverage.out
 
 The final `total:` line is the repository-wide statement coverage percentage.
 
-### HTML coverage report
+#### HTML coverage report
 
 Generate and open an interactive report:
 
@@ -308,7 +344,7 @@ go tool cover -html=coverage.out
 
 This opens a browser view with covered and uncovered lines highlighted.
 
-### Package-specific coverage
+#### Package-specific coverage
 
 Measure one package (example: `internal/snowflake`):
 
@@ -319,7 +355,7 @@ go tool cover -func=coverage-snowflake.out
 
 Useful when you are improving tests for a specific package.
 
-### Cross-package instrumentation
+#### Cross-package instrumentation
 
 Include all packages in coverage instrumentation while running tests:
 
@@ -330,7 +366,7 @@ go tool cover -func=coverage-allpkgs.out
 
 This is stricter than default coverage and can reveal gaps in code exercised indirectly.
 
-### Integration coverage (optional)
+#### Integration coverage (optional)
 
 If integration test prerequisites are configured (`SNOWFLAKE_*` env vars), run:
 
@@ -341,7 +377,7 @@ go tool cover -func=coverage-integration.out
 
 Tip: Keep unit-test and integration coverage profiles separate so it is clear what each suite contributes.
 
-### Cleanup generated coverage files
+#### Cleanup generated coverage files
 
 ```bash
 task coverage-clean
@@ -353,7 +389,7 @@ Equivalent raw command:
 rm -f coverage.out coverage-*.out
 ```
 
-## Taskfile usage
+### Taskfile usage
 
 This repository includes a `Taskfile.yml` for common development workflows.
 
@@ -378,10 +414,17 @@ task test-bats
 Current bats-core script test coverage:
 
 - `scripts/check_comment_style.bats` validates exported-comment style checks
+- `scripts/check_markdown_quality.bats` validates markdown quality checker behavior
 - `scripts/update_chainguard_images.bats` validates digest check/update behavior
 - `scripts/update_github_actions.bats` validates action version check/update behavior
 - `scripts/rename_module_path.bats` validates module path rewrite behavior
 - `scripts/generate_module_dependency_diagram.bats` validates diagram generation/update behavior
+
+Run markdown quality checks:
+
+```bash
+task markdown-check
+```
 
 Run integration tests against a live Snowflake account:
 
@@ -400,6 +443,7 @@ Other available tasks:
 ```bash
 task tidy
 task comment-check
+task markdown-check
 task test-bats
 task test-integration
 task vuln
@@ -419,7 +463,7 @@ task podman-build
 task clean
 ```
 
-### Dockerfile structure test (Google Container Structure Test)
+#### Dockerfile structure test (Google Container Structure Test)
 
 The repository includes a Dockerfile-focused Container Structure Test config at
 `test/dockerfile-structure-test.yaml`.
@@ -444,7 +488,7 @@ The `.github/workflows/dockerfile-structure-test.yml` workflow runs these tests
 automatically on pushes and pull requests that touch `Dockerfile`,
 `Containerfile`, or `test/dockerfile-structure-test.yaml`.
 
-### Updating pinned Chainguard image digests
+#### Updating pinned Chainguard image digests
 
 The repository includes `scripts/update_chainguard_images.sh` to keep pinned
 Chainguard image digests in `Dockerfile` and `Containerfile` up to date.
@@ -468,7 +512,7 @@ task image-check
 task image-update
 ```
 
-### Updating GitHub Actions versions in workflow YAML files
+#### Updating GitHub Actions versions in workflow YAML files
 
 The repository includes `scripts/update_github_actions.sh` to check and update
 action versions referenced by YAML files in `.github/workflows/`.
@@ -492,7 +536,7 @@ task actions-check
 task actions-update
 ```
 
-### Renaming the Go module path for template use
+#### Renaming the Go module path for template use
 
 The repository includes `scripts/rename_module_path.sh` to rewrite the current
 module path from `go.mod` across repository text files such as Go source,
@@ -516,7 +560,7 @@ Equivalent optional Taskfile wrapper:
 task module-rename -- github.com/example/golang-snowflake-reverse-engineer
 ```
 
-### Script maintenance notes
+#### Script maintenance notes
 
 The `scripts` directory contains small automation helpers that are safe to run
 locally and in CI. Use this section as a quick maintenance guide.
@@ -530,6 +574,18 @@ locally and in CI. Use this section as a quick maintenance guide.
 - Exit codes:
   - `0`: all files pass.
   - `1`: one or more style violations were found.
+
+`scripts/check_markdown_quality.sh`
+
+- Purpose: Runs automated Markdown quality checks across repository `.md` files.
+- Tools used:
+  - `markdownlint` for Markdown style/structure checks
+  - `lychee` for link validation (offline mode)
+  - `write-good` for prose quality checks
+- Configuration: uses `.markdownlint.json` when present.
+- Exit codes:
+  - `0`: all Markdown checks passed.
+  - `1`: required tooling missing or at least one checker failed.
 
 `scripts/update_chainguard_images.sh`
 
@@ -589,7 +645,9 @@ locally and in CI. Use this section as a quick maintenance guide.
   - `1`: required tools/files missing.
   - `2`: invalid CLI arguments.
 
-## Container build
+## Container usage
+
+### Container build
 
 Build for the current platform:
 
@@ -639,7 +697,7 @@ podman build \
   .
 ```
 
-## Container run
+### Container run
 
 Mount directories for the private key, logs, and output files:
 
@@ -681,12 +739,14 @@ podman run --rm \
   --max-connections 3
 ```
 
-## Notes on DDL generation
+## Reference
+
+### Notes on DDL generation
 
 - The tool prefers `GET_DDL` for rows that clearly identify Snowflake objects such as tables, views, sequences, procedures, functions, tasks, stages, pipes, streams, and file formats.
 - Some `INFORMATION_SCHEMA` views describe metadata rather than first-class objects. In those cases, the tool writes a SQL comment with the row payload so every row still produces deterministic output.
 
-## Go module dependency diagram
+### Go module dependency diagram
 
 This diagram set is generated from `go mod graph`.
 Run the script from the repository root:

@@ -46,6 +46,11 @@ tasks:
     cmds:
       - bash ./scripts/check_comment_style.sh
 
+  markdown-check:
+    desc: Validate Markdown files with markdownlint, lychee, and write-good
+    cmds:
+      - bash ./scripts/check_markdown_quality.sh
+
   vuln:
     desc: Run Go vulnerability scan with govulncheck
     cmds:

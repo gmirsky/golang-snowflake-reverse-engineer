@@ -1,0 +1,52 @@
+name: CLOC
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cloc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install cloc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cloc
+
+      - name: Generate CLOC report
+        run: |
+          cloc . \
+            --vcs=git \
+            --md \
+            --report-file=cloc-report.md
+
+          cloc . \
+            --vcs=git \
+            --json \
+            --out=cloc-report.json
+
+      - name: Publish report to workflow summary
+        run: |
+          {
+            echo "## CLOC Report"
+            echo
+            cat cloc-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CLOC artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloc-report
+          path: |
+            cloc-report.md
+            cloc-report.json

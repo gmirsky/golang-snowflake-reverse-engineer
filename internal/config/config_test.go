@@ -323,6 +323,7 @@ func TestParseTimestampedOutputFlag(t *testing.T) {
 func TestParsePassphraseFlag(t *testing.T) {
 	t.Parallel()
 
+	passphrase := "s3cr3t"
 	cfg, err := Parse([]string{
 		"--user", "demo_user",
 		"--account", "demo_account",
@@ -331,14 +332,14 @@ func TestParsePassphraseFlag(t *testing.T) {
 		"--output-dir", "./output",
 		"--log-dir", "./logs",
 		"--private-key", "./keys/demo.p8",
-		"--passphrase", "s3cr3t",
+		"--passphrase", passphrase,
 	})
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
 	}
 
-	if cfg.Passphrase != "s3cr3t" {
-		t.Fatalf("expected passphrase %q, got %q", "s3cr3t", cfg.Passphrase)
+	if cfg.Passphrase != passphrase {
+		t.Fatalf("expected passphrase %q, got %q", passphrase, cfg.Passphrase)
 	}
 }
 

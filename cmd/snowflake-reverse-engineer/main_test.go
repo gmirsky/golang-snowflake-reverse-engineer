@@ -106,7 +106,13 @@ func TestMainProcessHelper(t *testing.T) {
 		return
 	}
 
-	args := strings.Fields(os.Getenv("HELPER_ARGS"))
-	os.Args = append([]string{"snowflake-reverse-engineer"}, args...)
+	helperArgs := os.Getenv("HELPER_ARGS")
+	// Only allow test flags (start with -- or -test.) for safety
+	for _, arg := range strings.Fields(helperArgs) {
+		if !strings.HasPrefix(arg, "--") && !strings.HasPrefix(arg, "-test.") {
+			t.Fatalf("unsafe argument in HELPER_ARGS: %q", arg)
+		}
+	}
+	os.Args = append([]string{"snowflake-reverse-engineer"}, strings.Fields(helperArgs)...)
 	main()
 }

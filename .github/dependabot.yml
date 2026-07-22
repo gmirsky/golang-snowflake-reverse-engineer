@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: gomod
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
       time: "06:00"
       timezone: "UTC"
@@ -15,7 +15,7 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
       time: "06:15"
       timezone: "UTC"
@@ -27,7 +27,7 @@ updates:
   - package-ecosystem: docker
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
       time: "06:30"
       timezone: "UTC"

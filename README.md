@@ -697,6 +697,38 @@ locally and in CI. Use this section as a quick maintenance guide.
 
 ## Container usage
 
+### Container publishing (GHCR)
+
+This repository publishes a container image to GitHub Container Registry (GHCR)
+using the workflow at `.github/workflows/container-publish.yml`.
+
+Publish triggers:
+
+- Push to `main`
+- Push a tag matching `v*` (for example, `v1.2.3`)
+- Manual run via `workflow_dispatch`
+
+Published image name:
+
+```text
+ghcr.io/gmirsky/golang-snowflake-reverse-engineer
+```
+
+Published tags include:
+
+- Branch ref tags (for example, `main`)
+- Git tag refs (for example, `v1.2.3`)
+- Commit SHA tag
+- `latest` on the default branch
+
+Pull examples:
+
+```bash
+docker pull ghcr.io/gmirsky/golang-snowflake-reverse-engineer:latest
+docker pull ghcr.io/gmirsky/golang-snowflake-reverse-engineer:main
+docker pull ghcr.io/gmirsky/golang-snowflake-reverse-engineer:v1.2.3
+```
+
 ### Container build
 
 Build for the current platform:

@@ -841,113 +841,105 @@ flowchart TD
   N14["github.com/aws/aws-sdk-go-v2/feature/s3/manager"]
   N15["github.com/aws/aws-sdk-go-v2/internal/configsources"]
   N16["github.com/aws/aws-sdk-go-v2/internal/endpoints/v2"]
-  N17["github.com/aws/aws-sdk-go-v2/internal/ini"]
-  N18["github.com/aws/aws-sdk-go-v2/internal/v4a"]
-  N19["github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding"]
-  N20["github.com/aws/aws-sdk-go-v2/service/internal/checksum"]
-  N21["github.com/aws/aws-sdk-go-v2/service/internal/presigned-url"]
-  N22["github.com/aws/aws-sdk-go-v2/service/internal/s3shared"]
-  N23["github.com/aws/aws-sdk-go-v2/service/s3"]
+  N17["github.com/aws/aws-sdk-go-v2/internal/v4a"]
+  N18["github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding"]
+  N19["github.com/aws/aws-sdk-go-v2/service/internal/checksum"]
+  N20["github.com/aws/aws-sdk-go-v2/service/internal/presigned-url"]
+  N21["github.com/aws/aws-sdk-go-v2/service/internal/s3shared"]
+  N22["github.com/aws/aws-sdk-go-v2/service/s3"]
+  N23["github.com/aws/aws-sdk-go-v2/service/signin"]
   N24["github.com/aws/aws-sdk-go-v2/service/sso"]
   N25["github.com/aws/aws-sdk-go-v2/service/ssooidc"]
   N26["github.com/aws/aws-sdk-go-v2/service/sts"]
   N27["github.com/aws/smithy-go"]
-  N28["github.com/danieljoos/wincred"]
-  N29["github.com/dvsekhvalnov/jose2go"]
-  N30["github.com/gabriel-vasile/mimetype"]
-  N31["github.com/gmirsky/golang-snowflake-reverse-engineer"]
-  class N31 root
-  N32["github.com/goccy/go-json"]
-  N33["github.com/godbus/dbus"]
-  N34["github.com/golang-jwt/jwt/v5"]
-  N35["github.com/google/flatbuffers"]
-  N36["github.com/gsterjov/go-libsecret"]
-  N37["github.com/klauspost/compress"]
-  N38["github.com/klauspost/cpuid/v2"]
-  N39["github.com/mtibben/percent"]
-  N40["github.com/pierrec/lz4/v4"]
-  N41["github.com/pkg/browser"]
-  N42["github.com/snowflakedb/gosnowflake/v2"]
-  N43["github.com/zeebo/xxh3"]
-  N44["go"]
-  N45["go.opentelemetry.io/otel"]
-  N46["go.opentelemetry.io/otel/trace"]
-  N47["golang.org/x/crypto"]
-  N48["golang.org/x/exp"]
-  N49["golang.org/x/mod"]
+  N28["github.com/cespare/xxhash/v2"]
+  N29["github.com/danieljoos/wincred"]
+  N30["github.com/dvsekhvalnov/jose2go"]
+  N31["github.com/gabriel-vasile/mimetype"]
+  N32["github.com/gmirsky/golang-snowflake-reverse-engineer"]
+  class N32 root
+  N33["github.com/goccy/go-json"]
+  N34["github.com/godbus/dbus"]
+  N35["github.com/golang-jwt/jwt/v5"]
+  N36["github.com/google/flatbuffers"]
+  N37["github.com/gsterjov/go-libsecret"]
+  N38["github.com/klauspost/compress"]
+  N39["github.com/klauspost/cpuid/v2"]
+  N40["github.com/mtibben/percent"]
+  N41["github.com/pierrec/lz4/v4"]
+  N42["github.com/pkg/browser"]
+  N43["github.com/snowflakedb/gosnowflake/v2"]
+  N44["github.com/zeebo/xxh3"]
+  N45["go"]
+  N46["go.opentelemetry.io/otel"]
+  N47["go.opentelemetry.io/otel/trace"]
+  N48["golang.org/x/crypto"]
+  N49["golang.org/x/exp"]
   N50["golang.org/x/net"]
   N51["golang.org/x/oauth2"]
-  N52["golang.org/x/sync"]
-  N53["golang.org/x/sys"]
-  N54["golang.org/x/telemetry"]
-  N55["golang.org/x/term"]
-  N56["golang.org/x/text"]
-  N57["golang.org/x/tools"]
-  N58["golang.org/x/xerrors"]
-  N31 --> N1
-  N31 --> N2
-  N31 --> N3
-  N31 --> N4
-  N31 --> N5
-  N31 --> N6
-  N31 --> N7
-  N31 --> N8
-  N31 --> N9
-  N31 --> N10
-  N31 --> N11
-  N31 --> N12
-  N31 --> N13
-  N31 --> N14
-  N31 --> N15
-  N31 --> N16
-  N31 --> N17
-  N31 --> N18
-  N31 --> N19
-  N31 --> N20
-  N31 --> N21
-  N31 --> N22
-  N31 --> N23
-  N31 --> N24
-  N31 --> N25
-  N31 --> N26
-  N31 --> N27
-  N31 --> N28
-  N31 --> N29
-  N31 --> N30
-  N31 --> N32
-  N31 --> N33
-  N31 --> N34
-  N31 --> N35
-  N31 --> N36
-  N31 --> N37
-  N31 --> N38
-  N31 --> N39
-  N31 --> N40
-  N31 --> N41
-  N31 --> N42
-  N31 --> N43
-  N31 --> N44
-  N31 --> N45
-  N31 --> N46
-  N31 --> N47
-  N31 --> N48
-  N31 --> N49
-  N31 --> N50
-  N31 --> N51
-  N31 --> N52
-  N31 --> N53
-  N31 --> N54
-  N31 --> N55
-  N31 --> N56
-  N31 --> N57
-  N31 --> N58
+  N52["golang.org/x/sys"]
+  N53["golang.org/x/term"]
+  N54["golang.org/x/text"]
+  N32 --> N1
+  N32 --> N2
+  N32 --> N3
+  N32 --> N4
+  N32 --> N5
+  N32 --> N6
+  N32 --> N7
+  N32 --> N8
+  N32 --> N9
+  N32 --> N10
+  N32 --> N11
+  N32 --> N12
+  N32 --> N13
+  N32 --> N14
+  N32 --> N15
+  N32 --> N16
+  N32 --> N17
+  N32 --> N18
+  N32 --> N19
+  N32 --> N20
+  N32 --> N21
+  N32 --> N22
+  N32 --> N23
+  N32 --> N24
+  N32 --> N25
+  N32 --> N26
+  N32 --> N27
+  N32 --> N28
+  N32 --> N29
+  N32 --> N30
+  N32 --> N31
+  N32 --> N33
+  N32 --> N34
+  N32 --> N35
+  N32 --> N36
+  N32 --> N37
+  N32 --> N38
+  N32 --> N39
+  N32 --> N40
+  N32 --> N41
+  N32 --> N42
+  N32 --> N43
+  N32 --> N44
+  N32 --> N45
+  N32 --> N46
+  N32 --> N47
+  N32 --> N48
+  N32 --> N49
+  N32 --> N50
+  N32 --> N51
+  N32 --> N52
+  N32 --> N53
+  N32 --> N54
 ```
 
 ### 2) Transitive Dependencies (Chunked)
 
 Transitive dependencies are split into chunks of up to 20 nodes for readability.
 
-#### Chunk 1: Azure + AWS
+#### Chunk 1: Azure + Apache
 
 ```mermaid
 flowchart TD
@@ -961,151 +953,168 @@ flowchart TD
   N7["github.com/Azure/azure-sdk-for-go/sdk/azcore"]
   N8["github.com/Azure/azure-sdk-for-go/sdk/azidentity"]
   N9["github.com/Azure/azure-sdk-for-go/sdk/internal"]
-  N10["github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"]
-  N11["github.com/AzureAD/microsoft-authentication-library-for-go"]
-  N12["github.com/BurntSushi/toml"]
-  N13["github.com/DATA-DOG/go-sqlmock"]
-  N14["github.com/andybalholm/brotli"]
-  N15["github.com/antlr4-go/antlr/v4"]
-  N16["github.com/apache/arrow-go/v18"]
-  N17["github.com/apache/thrift"]
-  N18["github.com/aws/aws-sdk-go-v2"]
-  N19["github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream"]
+  N10["github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage"]
+  N11["github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"]
+  N12["github.com/AzureAD/microsoft-authentication-library-for-go"]
+  N13["github.com/BurntSushi/toml"]
+  N14["github.com/DATA-DOG/go-sqlmock"]
+  N15["github.com/andybalholm/brotli"]
+  N16["github.com/antlr4-go/antlr/v4"]
+  N17["github.com/apache/arrow-go/v18"]
+  N18["github.com/apache/thrift"]
+  N19["github.com/aws/aws-sdk-go-v2"]
   N20["github.com/gmirsky/golang-snowflake-reverse-engineer"]
   class N20 root
   N6 --> N5
   N7 --> N9
-  N10 --> N7
-  N10 --> N8
-  N10 --> N9
-  N10 --> N11
-  N16 --> N1
-  N16 --> N2
-  N16 --> N3
-  N16 --> N4
-  N16 --> N14
-  N16 --> N15
-  N16 --> N17
+  N9 --> N7
+  N9 --> N8
+  N9 --> N12
+  N11 --> N7
+  N11 --> N8
+  N11 --> N9
+  N11 --> N10
+  N11 --> N12
+  N17 --> N1
+  N17 --> N2
+  N17 --> N3
+  N17 --> N4
+  N17 --> N15
+  N17 --> N16
+  N17 --> N18
   N20 --> N5
   N20 --> N6
   N20 --> N7
   N20 --> N9
-  N20 --> N10
-  N20 --> N12
+  N20 --> N11
   N20 --> N13
-  N20 --> N16
-  N20 --> N18
+  N20 --> N14
+  N20 --> N17
   N20 --> N19
 ```
 
-#### Chunk 2: AWS + containerd
+#### Chunk 2: AWS + cespare
 
 ```mermaid
 flowchart TD
   classDef root fill:#dff6dd,stroke:#2f855a,stroke-width:2px
-  N1["github.com/aws/aws-sdk-go-v2/config"]
-  N2["github.com/aws/aws-sdk-go-v2/credentials"]
-  N3["github.com/aws/aws-sdk-go-v2/feature/ec2/imds"]
-  N4["github.com/aws/aws-sdk-go-v2/feature/s3/manager"]
-  N5["github.com/aws/aws-sdk-go-v2/internal/configsources"]
-  N6["github.com/aws/aws-sdk-go-v2/internal/endpoints/v2"]
-  N7["github.com/aws/aws-sdk-go-v2/internal/ini"]
+  N1["github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream"]
+  N2["github.com/aws/aws-sdk-go-v2/config"]
+  N3["github.com/aws/aws-sdk-go-v2/credentials"]
+  N4["github.com/aws/aws-sdk-go-v2/feature/ec2/imds"]
+  N5["github.com/aws/aws-sdk-go-v2/feature/s3/manager"]
+  N6["github.com/aws/aws-sdk-go-v2/internal/configsources"]
+  N7["github.com/aws/aws-sdk-go-v2/internal/endpoints/v2"]
   N8["github.com/aws/aws-sdk-go-v2/internal/v4a"]
   N9["github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding"]
   N10["github.com/aws/aws-sdk-go-v2/service/internal/checksum"]
   N11["github.com/aws/aws-sdk-go-v2/service/internal/presigned-url"]
   N12["github.com/aws/aws-sdk-go-v2/service/internal/s3shared"]
   N13["github.com/aws/aws-sdk-go-v2/service/s3"]
-  N14["github.com/aws/aws-sdk-go-v2/service/sso"]
-  N15["github.com/aws/aws-sdk-go-v2/service/ssooidc"]
-  N16["github.com/aws/aws-sdk-go-v2/service/sts"]
-  N17["github.com/aws/smithy-go"]
-  N18["github.com/gmirsky/golang-snowflake-reverse-engineer"]
-  class N18 root
-  N1 --> N2
-  N1 --> N3
-  N1 --> N5
-  N1 --> N6
-  N1 --> N7
-  N1 --> N9
-  N1 --> N11
-  N1 --> N14
-  N1 --> N15
-  N1 --> N16
-  N1 --> N17
+  N14["github.com/aws/aws-sdk-go-v2/service/signin"]
+  N15["github.com/aws/aws-sdk-go-v2/service/sso"]
+  N16["github.com/aws/aws-sdk-go-v2/service/ssooidc"]
+  N17["github.com/aws/aws-sdk-go-v2/service/sts"]
+  N18["github.com/aws/smithy-go"]
+  N19["github.com/cespare/xxhash/v2"]
+  N20["github.com/gmirsky/golang-snowflake-reverse-engineer"]
+  class N20 root
+  N1 --> N18
   N2 --> N3
-  N2 --> N5
+  N2 --> N4
   N2 --> N6
+  N2 --> N7
+  N2 --> N8
   N2 --> N9
   N2 --> N11
   N2 --> N14
   N2 --> N15
   N2 --> N16
   N2 --> N17
+  N2 --> N18
+  N3 --> N4
+  N3 --> N6
+  N3 --> N7
+  N3 --> N8
+  N3 --> N9
+  N3 --> N11
+  N3 --> N14
+  N3 --> N15
+  N3 --> N16
   N3 --> N17
-  N4 --> N1
-  N4 --> N2
-  N4 --> N3
-  N4 --> N5
-  N4 --> N6
-  N4 --> N7
-  N4 --> N8
-  N4 --> N9
-  N4 --> N10
-  N4 --> N11
-  N4 --> N12
-  N4 --> N13
-  N4 --> N14
-  N4 --> N15
-  N4 --> N16
-  N4 --> N17
+  N3 --> N18
+  N4 --> N18
+  N5 --> N1
+  N5 --> N2
+  N5 --> N3
+  N5 --> N4
+  N5 --> N6
+  N5 --> N7
+  N5 --> N8
+  N5 --> N9
+  N5 --> N10
+  N5 --> N11
+  N5 --> N12
+  N5 --> N13
+  N5 --> N14
+  N5 --> N15
+  N5 --> N16
   N5 --> N17
-  N6 --> N17
-  N8 --> N17
-  N9 --> N17
+  N5 --> N18
+  N6 --> N18
+  N7 --> N18
+  N8 --> N18
+  N9 --> N18
   N10 --> N11
-  N10 --> N17
-  N11 --> N17
-  N12 --> N17
-  N13 --> N5
+  N10 --> N18
+  N11 --> N18
+  N12 --> N18
+  N13 --> N1
   N13 --> N6
+  N13 --> N7
   N13 --> N8
   N13 --> N9
   N13 --> N10
   N13 --> N11
   N13 --> N12
-  N13 --> N17
-  N14 --> N5
+  N13 --> N18
   N14 --> N6
-  N14 --> N17
-  N15 --> N5
+  N14 --> N7
+  N14 --> N18
   N15 --> N6
-  N15 --> N17
-  N16 --> N5
+  N15 --> N7
+  N15 --> N18
   N16 --> N6
-  N16 --> N9
-  N16 --> N11
-  N16 --> N17
-  N18 --> N1
-  N18 --> N2
-  N18 --> N3
-  N18 --> N4
-  N18 --> N5
-  N18 --> N6
-  N18 --> N7
-  N18 --> N8
-  N18 --> N9
-  N18 --> N10
-  N18 --> N11
-  N18 --> N12
-  N18 --> N13
-  N18 --> N14
-  N18 --> N15
-  N18 --> N16
-  N18 --> N17
+  N16 --> N7
+  N16 --> N18
+  N17 --> N6
+  N17 --> N7
+  N17 --> N8
+  N17 --> N9
+  N17 --> N11
+  N17 --> N18
+  N20 --> N1
+  N20 --> N2
+  N20 --> N3
+  N20 --> N4
+  N20 --> N5
+  N20 --> N6
+  N20 --> N7
+  N20 --> N8
+  N20 --> N9
+  N20 --> N10
+  N20 --> N11
+  N20 --> N12
+  N20 --> N13
+  N20 --> N14
+  N20 --> N15
+  N20 --> N16
+  N20 --> N17
+  N20 --> N18
+  N20 --> N19
 ```
 
-#### Chunk 3: Google + golang-jwt
+#### Chunk 3: Google + goccy
 
 ```mermaid
 flowchart TD
@@ -1130,7 +1139,7 @@ flowchart TD
   N5 --> N9
 ```
 
-#### Chunk 4: klauspost + modern-go
+#### Chunk 4: kr + klauspost
 
 ```mermaid
 flowchart TD
@@ -1142,9 +1151,11 @@ flowchart TD
   N4["github.com/klauspost/cpuid/v2"]
   N5["github.com/kr/pty"]
   N6["github.com/kr/text"]
+  N7["github.com/mtibben/percent"]
   N1 --> N2
   N1 --> N3
   N1 --> N4
+  N1 --> N7
   N6 --> N5
 ```
 
@@ -1155,17 +1166,14 @@ flowchart TD
   classDef root fill:#dff6dd,stroke:#2f855a,stroke-width:2px
   N1["github.com/gmirsky/golang-snowflake-reverse-engineer"]
   class N1 root
-  N2["github.com/mtibben/percent"]
-  N3["github.com/pierrec/lz4/v4"]
-  N4["github.com/pkg/browser"]
-  N5["github.com/snowflakedb/gosnowflake/v2"]
+  N2["github.com/pierrec/lz4/v4"]
+  N3["github.com/pkg/browser"]
+  N4["github.com/snowflakedb/gosnowflake/v2"]
   N1 --> N2
   N1 --> N3
   N1 --> N4
-  N1 --> N5
-  N5 --> N2
-  N5 --> N3
-  N5 --> N4
+  N4 --> N2
+  N4 --> N3
 ```
 
 #### Chunk 6: Go x + OpenTelemetry
@@ -1189,24 +1197,24 @@ flowchart TD
   N13["golang.org/x/oauth2"]
   N14["golang.org/x/sync"]
   N15["golang.org/x/sys"]
-  N16["golang.org/x/telemetry"]
-  N17["golang.org/x/term"]
-  N18["golang.org/x/text"]
+  N16["golang.org/x/term"]
+  N17["golang.org/x/text"]
+  N18["golang.org/x/tools"]
+  N19["golang.org/x/tools/go/expect"]
   N1 --> N3
   N1 --> N4
   N1 --> N6
   N1 --> N8
   N1 --> N9
   N1 --> N10
-  N1 --> N11
   N1 --> N12
   N1 --> N13
-  N1 --> N14
   N1 --> N15
   N1 --> N16
   N1 --> N17
-  N1 --> N18
   N3 --> N2
+  N3 --> N4
+  N3 --> N15
   N6 --> N4
   N6 --> N5
   N6 --> N7
@@ -1216,42 +1224,33 @@ flowchart TD
   N9 --> N4
   N9 --> N12
   N9 --> N15
+  N9 --> N16
   N9 --> N17
-  N9 --> N18
   N10 --> N4
   N10 --> N11
   N10 --> N14
-  N11 --> N4
+  N10 --> N18
+  N10 --> N19
   N12 --> N4
   N12 --> N9
   N12 --> N15
+  N12 --> N16
   N12 --> N17
-  N12 --> N18
   N13 --> N4
-  N14 --> N4
   N15 --> N4
   N16 --> N4
-  N16 --> N11
-  N16 --> N14
   N16 --> N15
   N17 --> N4
-  N17 --> N15
-  N18 --> N4
-  N18 --> N11
-  N18 --> N14
+  N17 --> N11
+  N17 --> N14
+  N17 --> N18
 ```
 
 #### Chunk 7: Go x + toolchain
 
 ```mermaid
 flowchart TD
-  classDef root fill:#dff6dd,stroke:#2f855a,stroke-width:2px
-  N1["github.com/gmirsky/golang-snowflake-reverse-engineer"]
-  class N1 root
-  N2["golang.org/x/tools"]
-  N3["golang.org/x/xerrors"]
-  N1 --> N2
-  N1 --> N3
+  Empty["No dependencies in this slice"]
 ```
 
 <!-- MODULE_DEP_GRAPH_END -->

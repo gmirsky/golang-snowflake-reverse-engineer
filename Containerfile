@@ -6,7 +6,7 @@
 # Use Chainguard's Go builder image for a hardened software supply chain.
 # The -dev variant includes build tooling needed by `go mod` and `go build`.
 # Pinning by digest provides deterministic builds and safer supply-chain behavior.
-FROM cgr.dev/chainguard/go:latest-dev@sha256:6003b02739bafe9c54ddfe8fe3c6a005f5c55e7c8c6000cb166bfac1cc5c86c1 AS builder
+FROM cgr.dev/chainguard/go:latest-dev@sha256:af99bbaafe0a6e0ae3497deb21d19e52f24371b72c5f19ab203c4dfa89944f81 AS builder
 
 # Optional overrides for cross-build scenarios.
 # Defaults target Linux AMD64, but callers can override for other platforms.
@@ -31,7 +31,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags=
 # --- runtime stage -------------------------------------------------
 # Use Chainguard's minimal static runtime image to reduce attack surface.
 # Final image excludes compilers and source files to minimize risk and size.
-FROM cgr.dev/chainguard/static:latest@sha256:2fdfacc8d61164aa9e20909dceec7cc28b9feb66580e8e1a65b9f2443c53b61b
+FROM cgr.dev/chainguard/static:latest@sha256:60582b2ae6074f641094af0f370d4ab241aab271858a66223dcde7eee9f51638
 
 # Runtime work directory for relative command/file references.
 WORKDIR /app

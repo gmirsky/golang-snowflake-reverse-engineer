@@ -34,6 +34,33 @@ For each row in a view, the tool attempts to derive a Snowflake object identity 
 - An RSA private key file in a format supported by the Go SSH parser
 - Access to the target database and its `INFORMATION_SCHEMA`
 
+### Current version baselines
+
+The repository currently tracks these version baselines:
+
+- Go toolchain directive in `go.mod`: `go 1.26.1`
+- Direct Go dependencies in `go.mod`:
+  - `github.com/DATA-DOG/go-sqlmock v1.5.2`
+  - `github.com/snowflakedb/gosnowflake/v2 v2.1.0`
+  - `golang.org/x/crypto v0.54.0`
+- GitHub Actions references under `.github/workflows/`:
+  - `actions/checkout@v7.0.1`
+  - `actions/setup-go@v7.0.0`
+  - `actions/setup-node@v7.0.0`
+  - `actions/upload-artifact@v7.0.1`
+- Pinned Chainguard image digests:
+  - `cgr.dev/chainguard/go:latest-dev@sha256:af99bbaafe0a6e0ae3497deb21d19e52f24371b72c5f19ab203c4dfa89944f81`
+  - `cgr.dev/chainguard/static:latest@sha256:60582b2ae6074f641094af0f370d4ab241aab271858a66223dcde7eee9f51638`
+
+To refresh these baselines after future upgrades, run:
+
+```bash
+task tidy
+task actions-update
+task image-update
+task module-diagram-update
+```
+
 ### Prerequisite tools
 
 Install these tools before running build and test workflows.

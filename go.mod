@@ -1,11 +1,11 @@
 module github.com/gmirsky/golang-snowflake-reverse-engineer
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/snowflakedb/gosnowflake/v2 v2.1.0
-	golang.org/x/crypto v0.54.0
+	golang.org/x/crypto v0.55.0
 )
 
 require (
@@ -57,5 +57,5 @@ require (
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 )

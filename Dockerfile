@@ -35,7 +35,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags=
 # --- runtime stage -------------------------------------------------
 # Use Chainguard's minimal static runtime image to reduce attack surface.
 # Runtime image contains only what is needed to execute the binary.
-FROM cgr.dev/chainguard/static:latest@sha256:f51c2493951313c3ad4069080b2814ffb6ed6fe3909dabeb84a9482f42d5600b
+FROM cgr.dev/chainguard/static:latest@sha256:324c96273762d9500fd72d973f7d05f0dd15be0668935b3ba02221658041dc9a
 
 # /app is the working directory for relative file paths during container run.
 WORKDIR /app

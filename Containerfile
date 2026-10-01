@@ -6,7 +6,7 @@
 # Use Chainguard's Go builder image for a hardened software supply chain.
 # The -dev variant includes build tooling needed by `go mod` and `go build`.
 # Pinning by digest provides deterministic builds and safer supply-chain behavior.
-FROM cgr.dev/chainguard/go:latest-dev@sha256:b42a7a6fbea83df912cfb5cd73d513d03056ca42fdfeaedb6b7189a1a3dfcc39 AS builder
+FROM cgr.dev/chainguard/go:latest-dev@sha256:e6c2e263b59bae84e9cad12bb2571ee61626b83165be0f1a867758bf1a6b704b AS builder
 
 # Optional overrides for cross-build scenarios.
 # Defaults target Linux AMD64, but callers can override for other platforms.

@@ -6,7 +6,7 @@
 # Use Chainguard's Go builder image for a hardened software supply chain.
 # The -dev variant includes build tooling needed by `go mod` and `go build`.
 # Pinning by digest makes builds reproducible and prevents surprise upstream changes.
-FROM --platform=$BUILDPLATFORM cgr.dev/chainguard/go:latest-dev@sha256:b42a7a6fbea83df912cfb5cd73d513d03056ca42fdfeaedb6b7189a1a3dfcc39 AS builder
+FROM --platform=$BUILDPLATFORM cgr.dev/chainguard/go:latest-dev@sha256:e6c2e263b59bae84e9cad12bb2571ee61626b83165be0f1a867758bf1a6b704b AS builder
 
 # TARGETOS / TARGETARCH are injected by `docker buildx build --platform`.
 # This allows one Dockerfile to produce binaries for multiple CPU/OS targets.
